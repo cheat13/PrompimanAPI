@@ -8,7 +8,10 @@ namespace PrompimanAPI.Models
         public string Th_Prefix { get; }
         public string Th_Firstname { get; }
         public string Th_Lastname { get; }
-        public Sex Sex { get; }
+        public string En_Prefix { get; }
+        public string En_Firstname { get; }
+        public string En_Lastname { get; }
+        public string Sex { get; }
         public DateTime Birthday { get; set; }
         public string Address { get; set; }
         public DateTime IssueDate { get; set; }
