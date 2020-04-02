@@ -4,7 +4,7 @@ namespace PrompimanAPI.Models
 {
     public class ThMember
     {
-        public string IDCard { get; set; }
+        public string IdCard { get; set; }
         public string Th_Prefix { get; set; }
         public string Th_Firstname { get; set; }
         public string Th_Lastname { get; set; }

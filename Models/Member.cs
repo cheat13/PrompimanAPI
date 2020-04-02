@@ -5,7 +5,7 @@ namespace PrompimanAPI.Models
     public class Member
     {
         public string _id { get; set; }
-        public string IDCard { get; set; }
+        public string IdCard { get; set; }
         public string PassportNo { get; set; }
         public string Th_Prefix { get; set; }
         public string Th_Firstname { get; set; }
