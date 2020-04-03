@@ -163,9 +163,16 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpPut("{id}")]
-        public void Update(int id, [FromBody] Member member)
+        public async Task<MemberResponse> Update(string id, [FromBody] Member member)
         {
-            
+            member.LastUpdate = DateTime.Now;
+
+            await CollectionMember.ReplaceOneAsync(m => m._id == id, member);
+
+            return new MemberResponse
+            {
+                IsSuccess = true,
+            };
         }
     }
 }
