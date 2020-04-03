@@ -21,7 +21,7 @@ namespace PrompimanAPI.Models
         public string Telephone { get; set; }
         public string Job { get; set; }
         public string Nationality { get; set; }
-        public string Picture { get; set; }
+        public string Photo { get; set; }
         public DateTime CreationDateTime { get; set; }
         public DateTime LastUpdate { get; set; }
     }

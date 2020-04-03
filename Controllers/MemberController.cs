@@ -147,7 +147,7 @@ namespace PrompimanAPI.Controllers
                     IssueDate = member.IssueDate,
                     ExpiryDate = member.ExpiryDate,
                     Telephone = member.Telephone,
-                    Job = null, // Default ??
+                    Job = "รับจ้าง",
                     Nationality = member.Nationality,
                     CreationDateTime = now,
                     LastUpdate = now,
