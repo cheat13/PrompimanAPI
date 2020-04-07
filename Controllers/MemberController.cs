@@ -131,7 +131,7 @@ namespace PrompimanAPI.Controllers
                     ExpiryDate = member.ExpiryDate,
                     Telephone = member.Telephone,
                     Job = member.Job,
-                    Nationality = "Thai", // Default ??
+                    Nationality = "ไทย",
                     CreationDateTime = now,
                     LastUpdate = now,
                 };
