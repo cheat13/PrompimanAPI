@@ -67,6 +67,36 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpPost]
+        public async Task<MemberResponse> Create([FromBody] Member member)
+        {
+            var isOldMember = await CollectionMember.Find(m => m.IdCard == member.IdCard || m.PassportNo == member.PassportNo).AnyAsync();
+            if (isOldMember)
+            {
+                return new MemberResponse
+                {
+                    IsSuccess = false,
+                    ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
+                };
+            }
+            else
+            {
+                var now = DateTime.Now;
+
+                member._id = now.Ticks.ToString();
+                member.Nationality = member.Nationality ?? "Thai"; // Default for Thai ??
+                member.CreationDateTime = now;
+                member.LastUpdate = now;
+
+                await CollectionMember.InsertOneAsync(member);
+
+                return new MemberResponse
+                {
+                    IsSuccess = true,
+                };
+            }
+        }
+
+        [HttpPost]
         public async Task<MemberResponse> CreateTh([FromBody] ThMember member)
         {
             var isOldMember = await CollectionMember.Find(m => m.IdCard == member.IdCard).AnyAsync();
