@@ -81,11 +81,12 @@ namespace PrompimanAPI.Controllers
             else
             {
                 var now = DateTime.Now;
-
                 member._id = now.Ticks.ToString();
-                member.Nationality = member.Nationality ?? "Thai"; // Default for Thai ??
                 member.CreationDateTime = now;
                 member.LastUpdate = now;
+
+                member.Nationality = member.Nationality ?? "ไทย";
+                member.Job = member.Job ?? "รับจ้าง";
 
                 await CollectionMember.InsertOneAsync(member);
 
