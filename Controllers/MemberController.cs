@@ -65,6 +65,12 @@ namespace PrompimanAPI.Controllers
         {
             return await CollectionMember.Find(m => m._id == id).FirstOrDefaultAsync();
         }
+
+        [HttpGet("{idCard}")]
+        public async Task<ActionResult<Member>> GetByIdCard(string idCard)
+        {
+            return await CollectionMember.Find(m => m.IdCard == idCard).FirstOrDefaultAsync();
+        }
         
         [HttpPost]
         public async Task<MemberResponse> Create([FromBody] Member member)
