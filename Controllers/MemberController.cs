@@ -65,11 +65,13 @@ namespace PrompimanAPI.Controllers
         {
             return await CollectionMember.Find(m => m._id == id).FirstOrDefaultAsync();
         }
-
+        
         [HttpPost]
         public async Task<MemberResponse> Create([FromBody] Member member)
         {
-            var isOldMember = await CollectionMember.Find(m => m.IdCard == member.IdCard || m.PassportNo == member.PassportNo).AnyAsync();
+            var isOldMember = await CollectionMember.Find(m => (!string.IsNullOrEmpty(m.IdCard) && m.IdCard == member.IdCard)
+                || (!string.IsNullOrEmpty(m.PassportNo) && m.PassportNo == member.PassportNo)).AnyAsync();
+
             if (isOldMember)
             {
                 return new MemberResponse
