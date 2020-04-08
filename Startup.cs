@@ -47,6 +47,7 @@ namespace PrompimanAPI
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+            app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
