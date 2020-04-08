@@ -67,6 +67,37 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpPost]
+        public async Task<MemberResponse> Create([FromBody] Member member)
+        {
+            var isOldMember = await CollectionMember.Find(m => m.IdCard == member.IdCard || m.PassportNo == member.PassportNo).AnyAsync();
+            if (isOldMember)
+            {
+                return new MemberResponse
+                {
+                    IsSuccess = false,
+                    ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
+                };
+            }
+            else
+            {
+                var now = DateTime.Now;
+                member._id = now.Ticks.ToString();
+                member.CreationDateTime = now;
+                member.LastUpdate = now;
+
+                member.Nationality = member.Nationality ?? "ไทย";
+                member.Job = member.Job ?? "รับจ้าง";
+
+                await CollectionMember.InsertOneAsync(member);
+
+                return new MemberResponse
+                {
+                    IsSuccess = true,
+                };
+            }
+        }
+
+        [HttpPost]
         public async Task<MemberResponse> CreateTh([FromBody] ThMember member)
         {
             var isOldMember = await CollectionMember.Find(m => m.IdCard == member.IdCard).AnyAsync();
@@ -100,7 +131,7 @@ namespace PrompimanAPI.Controllers
                     ExpiryDate = member.ExpiryDate,
                     Telephone = member.Telephone,
                     Job = member.Job,
-                    Nationality = "Thai", // Default ??
+                    Nationality = "ไทย",
                     CreationDateTime = now,
                     LastUpdate = now,
                 };
@@ -147,7 +178,7 @@ namespace PrompimanAPI.Controllers
                     IssueDate = member.IssueDate,
                     ExpiryDate = member.ExpiryDate,
                     Telephone = member.Telephone,
-                    Job = null, // Default ??
+                    Job = "รับจ้าง",
                     Nationality = member.Nationality,
                     CreationDateTime = now,
                     LastUpdate = now,
