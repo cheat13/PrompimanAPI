@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Storage;
+using Microsoft.Azure.Storage.Blob;
 using MongoDB.Driver;
 using PrompimanAPI.Models;
 
@@ -65,16 +68,22 @@ namespace PrompimanAPI.Controllers
         {
             return await CollectionMember.Find(m => m._id == id).FirstOrDefaultAsync();
         }
-        
+
+        [HttpGet("{idCard}")]
+        public async Task<ActionResult<Member>> GetByIdCard(string idCard)
+        {
+            return await CollectionMember.Find(m => m.IdCard == idCard).FirstOrDefaultAsync();
+        }
+
         [HttpPost]
-        public async Task<MemberResponse> Create([FromBody] Member member)
+        public async Task<Response> Create([FromBody] Member member)
         {
             var isOldMember = await CollectionMember.Find(m => (!string.IsNullOrEmpty(m.IdCard) && m.IdCard == member.IdCard)
                 || (!string.IsNullOrEmpty(m.PassportNo) && m.PassportNo == member.PassportNo)).AnyAsync();
 
             if (isOldMember)
             {
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = false,
                     ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
@@ -92,7 +101,7 @@ namespace PrompimanAPI.Controllers
 
                 await CollectionMember.InsertOneAsync(member);
 
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = true,
                 };
@@ -100,12 +109,12 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<MemberResponse> CreateTh([FromBody] ThMember member)
+        public async Task<Response> CreateTh([FromBody] ThMember member)
         {
             var isOldMember = await CollectionMember.Find(m => m.IdCard == member.IdCard).AnyAsync();
             if (isOldMember)
             {
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = false,
                     ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
@@ -140,7 +149,7 @@ namespace PrompimanAPI.Controllers
 
                 await CollectionMember.InsertOneAsync(newMember);
 
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = true,
                 };
@@ -148,12 +157,12 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<MemberResponse> CreateEn([FromBody] EnMember member)
+        public async Task<Response> CreateEn([FromBody] EnMember member)
         {
             var isOldMember = await CollectionMember.Find(m => m.PassportNo == member.PassportNo).AnyAsync();
             if (isOldMember)
             {
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = false,
                     ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
@@ -188,7 +197,7 @@ namespace PrompimanAPI.Controllers
 
                 await CollectionMember.InsertOneAsync(newMember);
 
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = true,
                 };
@@ -196,16 +205,59 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<MemberResponse> Update(string id, [FromBody] Member member)
+        public async Task<Response> Update(string id, [FromBody] Member member)
         {
             member.LastUpdate = DateTime.Now;
 
             await CollectionMember.ReplaceOneAsync(m => m._id == id, member);
 
-            return new MemberResponse
+            return new Response
             {
                 IsSuccess = true,
             };
+        }
+
+        [HttpPost]
+        public async Task<PhotoResponse> UploadPhoto([FromBody] PhotoRequest request)
+        {
+            var connectionString = "DefaultEndpointsProtocol=https;AccountName=saladpukstorage;AccountKey=V84hggJN/t56SYwQHoMDUt5kFD2bOOtUdxwK5ndMdRCyBZ4kAo8WLz7pU/H09zfrdS+SmmC8aYJsrWwoYubm4Q==;EndpointSuffix=core.windows.net";
+
+            CloudStorageAccount storageAccount;
+            if (CloudStorageAccount.TryParse(connectionString, out storageAccount))
+            {
+                var url = "";
+                var containerName = "photos"; // ตั้งชื่อได้เอง
+                var blobName = $"{request.IdCard}.png";
+
+                var cloudBlobClient = storageAccount.CreateCloudBlobClient();
+                var cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
+                await cloudBlobContainer.CreateIfNotExistsAsync();
+
+                var permissions = new BlobContainerPermissions
+                {
+                    PublicAccess = BlobContainerPublicAccessType.Blob
+                };
+                await cloudBlobContainer.SetPermissionsAsync(permissions);
+
+                var cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(blobName);
+                cloudBlockBlob.Properties.ContentType = "image/png";
+
+                await cloudBlockBlob.UploadFromByteArrayAsync(request.PhotoRaw, 0, request.PhotoRaw.Length);
+
+                return new PhotoResponse
+                {
+                    IsSuccess = true,
+                    Path = $"{url}/{containerName}/{blobName}",
+                };
+            }
+            else
+            {
+                return new PhotoResponse
+                {
+                    IsSuccess = false,
+                    ErrorMessage = "The connection string isn't valid",
+                };
+            }
         }
     }
 }
