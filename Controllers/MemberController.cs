@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Storage;
+using Microsoft.Azure.Storage.Blob;
 using MongoDB.Driver;
 using PrompimanAPI.Models;
 
@@ -71,7 +74,7 @@ namespace PrompimanAPI.Controllers
         {
             return await CollectionMember.Find(m => m.IdCard == idCard).FirstOrDefaultAsync();
         }
-        
+
         [HttpPost]
         public async Task<MemberResponse> Create([FromBody] Member member)
         {
@@ -212,6 +215,49 @@ namespace PrompimanAPI.Controllers
             {
                 IsSuccess = true,
             };
+        }
+
+        [HttpPost]
+        public async Task<PhotoResponse> UploadPhoto([FromBody] PhotoRequest request)
+        {
+            var connectionString = "DefaultEndpointsProtocol=https;AccountName=saladpukstorage;AccountKey=V84hggJN/t56SYwQHoMDUt5kFD2bOOtUdxwK5ndMdRCyBZ4kAo8WLz7pU/H09zfrdS+SmmC8aYJsrWwoYubm4Q==;EndpointSuffix=core.windows.net";
+
+            CloudStorageAccount storageAccount;
+            if (CloudStorageAccount.TryParse(connectionString, out storageAccount))
+            {
+                var url = "";
+                var containerName = "photos"; // ตั้งชื่อได้เอง
+                var blobName = $"{request.IdCard}.png";
+
+                var cloudBlobClient = storageAccount.CreateCloudBlobClient();
+                var cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
+                await cloudBlobContainer.CreateIfNotExistsAsync();
+
+                var permissions = new BlobContainerPermissions
+                {
+                    PublicAccess = BlobContainerPublicAccessType.Blob
+                };
+                await cloudBlobContainer.SetPermissionsAsync(permissions);
+
+                var cloudBlockBlob = cloudBlobContainer.GetBlockBlobReference(blobName);
+                cloudBlockBlob.Properties.ContentType = "image/png";
+
+                await cloudBlockBlob.UploadFromByteArrayAsync(request.PhotoRaw, 0, request.PhotoRaw.Length);
+
+                return new PhotoResponse
+                {
+                    IsSuccess = true,
+                    Path = $"{url}/{containerName}/{blobName}",
+                };
+            }
+            else
+            {
+                return new PhotoResponse
+                {
+                    IsSuccess = false,
+                    ErrorMessage = "The connection string isn't valid",
+                };
+            }
         }
     }
 }
