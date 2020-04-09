@@ -1,6 +1,6 @@
-namespace PrompimanAPI.Models
+﻿namespace PrompimanAPI.Models
 {
-    public class MemberResponse
+    public class Response
     {
         public bool IsSuccess { get; set; }
         public string ErrorMessage { get; set; }

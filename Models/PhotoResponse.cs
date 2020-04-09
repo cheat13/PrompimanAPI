@@ -2,10 +2,8 @@
 
 namespace PrompimanAPI.Models
 {
-    public class PhotoResponse
+    public class PhotoResponse : Response
     {
-        public bool IsSuccess { get; set; }
-        public string ErrorMessage { get; set; }
         public string Path { get; set; }
     }
 }

@@ -76,14 +76,14 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<MemberResponse> Create([FromBody] Member member)
+        public async Task<Response> Create([FromBody] Member member)
         {
             var isOldMember = await CollectionMember.Find(m => (!string.IsNullOrEmpty(m.IdCard) && m.IdCard == member.IdCard)
                 || (!string.IsNullOrEmpty(m.PassportNo) && m.PassportNo == member.PassportNo)).AnyAsync();
 
             if (isOldMember)
             {
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = false,
                     ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
@@ -101,7 +101,7 @@ namespace PrompimanAPI.Controllers
 
                 await CollectionMember.InsertOneAsync(member);
 
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = true,
                 };
@@ -109,12 +109,12 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<MemberResponse> CreateTh([FromBody] ThMember member)
+        public async Task<Response> CreateTh([FromBody] ThMember member)
         {
             var isOldMember = await CollectionMember.Find(m => m.IdCard == member.IdCard).AnyAsync();
             if (isOldMember)
             {
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = false,
                     ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
@@ -149,7 +149,7 @@ namespace PrompimanAPI.Controllers
 
                 await CollectionMember.InsertOneAsync(newMember);
 
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = true,
                 };
@@ -157,12 +157,12 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<MemberResponse> CreateEn([FromBody] EnMember member)
+        public async Task<Response> CreateEn([FromBody] EnMember member)
         {
             var isOldMember = await CollectionMember.Find(m => m.PassportNo == member.PassportNo).AnyAsync();
             if (isOldMember)
             {
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = false,
                     ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
@@ -197,7 +197,7 @@ namespace PrompimanAPI.Controllers
 
                 await CollectionMember.InsertOneAsync(newMember);
 
-                return new MemberResponse
+                return new Response
                 {
                     IsSuccess = true,
                 };
@@ -205,13 +205,13 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<MemberResponse> Update(string id, [FromBody] Member member)
+        public async Task<Response> Update(string id, [FromBody] Member member)
         {
             member.LastUpdate = DateTime.Now;
 
             await CollectionMember.ReplaceOneAsync(m => m._id == id, member);
 
-            return new MemberResponse
+            return new Response
             {
                 IsSuccess = true,
             };
