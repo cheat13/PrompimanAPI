@@ -220,13 +220,13 @@ namespace PrompimanAPI.Controllers
         [HttpPost]
         public async Task<PhotoResponse> UploadPhoto([FromBody] PhotoRequest request)
         {
-            var connectionString = "DefaultEndpointsProtocol=https;AccountName=saladpukstorage;AccountKey=V84hggJN/t56SYwQHoMDUt5kFD2bOOtUdxwK5ndMdRCyBZ4kAo8WLz7pU/H09zfrdS+SmmC8aYJsrWwoYubm4Q==;EndpointSuffix=core.windows.net";
+            var connectionString = "DefaultEndpointsProtocol=https;AccountName=prompiman;AccountKey=YWxt0AZK5L7CcMRWb+0t1mvnmzwdJcxI6X/D8Q2sVOuQKEXZqv8KTtM89Al9VAbu8JewsemPx66+QZhlI7VkhQ==;EndpointSuffix=core.windows.net";
 
             CloudStorageAccount storageAccount;
             if (CloudStorageAccount.TryParse(connectionString, out storageAccount))
             {
-                var url = "";
-                var containerName = "photos"; // ตั้งชื่อได้เอง
+                var url = storageAccount.BlobStorageUri.PrimaryUri.AbsoluteUri;
+                var containerName = "photos/";
                 var blobName = $"{request.IdCard}.png";
 
                 var cloudBlobClient = storageAccount.CreateCloudBlobClient();
@@ -247,7 +247,7 @@ namespace PrompimanAPI.Controllers
                 return new PhotoResponse
                 {
                     IsSuccess = true,
-                    Path = $"{url}/{containerName}/{blobName}",
+                    Path = $"{url}{containerName}{blobName}",
                 };
             }
             else
