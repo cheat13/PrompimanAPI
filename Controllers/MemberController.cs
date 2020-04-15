@@ -46,21 +46,22 @@ namespace PrompimanAPI.Controllers
         private static FilterDefinition<Member> CreateFilter(string word)
         {
             var fb = Builders<Member>.Filter;
-            FilterDefinition<Member> filter = fb.Where(m => true);
+            FilterDefinition<Member> carryFilter = fb.Where(m => true);
 
             if (!string.IsNullOrEmpty(word))
             {
                 word = word.ToLower();
-                filter = fb.Where(m => m.IdCard.Contains(word)
+                var filter = fb.Where(m => m.IdCard.Contains(word)
                     || m.PassportNo.ToLower().Contains(word)
                     || m.Th_Firstname.Contains(word)
                     || m.Th_Lastname.Contains(word)
                     || m.En_Firstname.ToLower().Contains(word)
                     || m.En_Lastname.ToLower().Contains(word)
                     || m.Telephone.Contains(word));
+                carryFilter = filter & carryFilter;
             }
 
-            return filter;
+            return carryFilter;
         }
 
         [HttpGet("{id}")]
@@ -108,101 +109,101 @@ namespace PrompimanAPI.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<Response> CreateTh([FromBody] ThMember member)
-        {
-            var isOldMember = await CollectionMember.Find(m => m.IdCard == member.IdCard).AnyAsync();
-            if (isOldMember)
-            {
-                return new Response
-                {
-                    IsSuccess = false,
-                    ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
-                };
-            }
-            else
-            {
-                var now = DateTime.Now;
+        // [HttpPost]
+        // public async Task<Response> CreateTh([FromBody] ThMember member)
+        // {
+        //     var isOldMember = await CollectionMember.Find(m => m.IdCard == member.IdCard).AnyAsync();
+        //     if (isOldMember)
+        //     {
+        //         return new Response
+        //         {
+        //             IsSuccess = false,
+        //             ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
+        //         };
+        //     }
+        //     else
+        //     {
+        //         var now = DateTime.Now;
 
-                var newMember = new Member
-                {
-                    _id = now.Ticks.ToString(),
-                    IdCard = member.IdCard,
-                    PassportNo = "",
-                    Th_Prefix = member.Th_Prefix,
-                    Th_Firstname = member.Th_Firstname,
-                    Th_Lastname = member.Th_Lastname,
-                    En_Prefix = member.En_Prefix,
-                    En_Firstname = member.En_Firstname,
-                    En_Lastname = member.En_Lastname,
-                    Sex = member.Sex,
-                    Birthday = member.Birthday,
-                    Address = member.Address,
-                    IssueDate = member.IssueDate,
-                    ExpiryDate = member.ExpiryDate,
-                    Telephone = member.Telephone,
-                    Job = member.Job,
-                    Nationality = "ไทย",
-                    CreationDateTime = now,
-                    LastUpdate = now,
-                };
+        //         var newMember = new Member
+        //         {
+        //             _id = now.Ticks.ToString(),
+        //             IdCard = member.IdCard,
+        //             PassportNo = "",
+        //             Th_Prefix = member.Th_Prefix,
+        //             Th_Firstname = member.Th_Firstname,
+        //             Th_Lastname = member.Th_Lastname,
+        //             En_Prefix = member.En_Prefix,
+        //             En_Firstname = member.En_Firstname,
+        //             En_Lastname = member.En_Lastname,
+        //             Sex = member.Sex,
+        //             Birthday = member.Birthday,
+        //             Address = member.Address,
+        //             IssueDate = member.IssueDate,
+        //             ExpiryDate = member.ExpiryDate,
+        //             Telephone = member.Telephone,
+        //             Job = member.Job,
+        //             Nationality = "ไทย",
+        //             CreationDateTime = now,
+        //             LastUpdate = now,
+        //         };
 
-                await CollectionMember.InsertOneAsync(newMember);
+        //         await CollectionMember.InsertOneAsync(newMember);
 
-                return new Response
-                {
-                    IsSuccess = true,
-                };
-            }
-        }
+        //         return new Response
+        //         {
+        //             IsSuccess = true,
+        //         };
+        //     }
+        // }
 
-        [HttpPost]
-        public async Task<Response> CreateEn([FromBody] EnMember member)
-        {
-            var isOldMember = await CollectionMember.Find(m => m.PassportNo == member.PassportNo).AnyAsync();
-            if (isOldMember)
-            {
-                return new Response
-                {
-                    IsSuccess = false,
-                    ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
-                };
-            }
-            else
-            {
-                var now = DateTime.Now;
+        // [HttpPost]
+        // public async Task<Response> CreateEn([FromBody] EnMember member)
+        // {
+        //     var isOldMember = await CollectionMember.Find(m => m.PassportNo == member.PassportNo).AnyAsync();
+        //     if (isOldMember)
+        //     {
+        //         return new Response
+        //         {
+        //             IsSuccess = false,
+        //             ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
+        //         };
+        //     }
+        //     else
+        //     {
+        //         var now = DateTime.Now;
 
-                var newMember = new Member
-                {
-                    _id = now.Ticks.ToString(),
-                    IdCard = "",
-                    PassportNo = member.PassportNo,
-                    Th_Prefix = "",
-                    Th_Firstname = "",
-                    Th_Lastname = "",
-                    En_Prefix = member.En_Prefix,
-                    En_Firstname = member.En_Firstname,
-                    En_Lastname = member.En_Lastname,
-                    Sex = member.Sex,
-                    Birthday = member.Birthday,
-                    Address = null,
-                    IssueDate = member.IssueDate,
-                    ExpiryDate = member.ExpiryDate,
-                    Telephone = member.Telephone,
-                    Job = "รับจ้าง",
-                    Nationality = member.Nationality,
-                    CreationDateTime = now,
-                    LastUpdate = now,
-                };
+        //         var newMember = new Member
+        //         {
+        //             _id = now.Ticks.ToString(),
+        //             IdCard = "",
+        //             PassportNo = member.PassportNo,
+        //             Th_Prefix = "",
+        //             Th_Firstname = "",
+        //             Th_Lastname = "",
+        //             En_Prefix = member.En_Prefix,
+        //             En_Firstname = member.En_Firstname,
+        //             En_Lastname = member.En_Lastname,
+        //             Sex = member.Sex,
+        //             Birthday = member.Birthday,
+        //             Address = null,
+        //             IssueDate = member.IssueDate,
+        //             ExpiryDate = member.ExpiryDate,
+        //             Telephone = member.Telephone,
+        //             Job = "รับจ้าง",
+        //             Nationality = member.Nationality,
+        //             CreationDateTime = now,
+        //             LastUpdate = now,
+        //         };
 
-                await CollectionMember.InsertOneAsync(newMember);
+        //         await CollectionMember.InsertOneAsync(newMember);
 
-                return new Response
-                {
-                    IsSuccess = true,
-                };
-            }
-        }
+        //         return new Response
+        //         {
+        //             IsSuccess = true,
+        //         };
+        //     }
+        // }
 
         [HttpPut("{id}")]
         public async Task<Response> Update(string id, [FromBody] Member member)
