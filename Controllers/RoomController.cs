@@ -36,15 +36,10 @@ namespace PrompimanAPI.Controllers
             var roomActLst = await CollectionRoomActivated.Find(filter).ToListAsync();
             if (roomActLst.Any())
             {
-                var roomNoActLst = roomActLst.Select(it => it.RoomNo).ToList();
-
                 rooms.ForEach(room =>
                 {
                     var roomAct = roomActLst.FirstOrDefault(r => r.RoomNo == room._id);
-                    if (roomAct != null)
-                    {
-                        room.Status = roomAct.Status;
-                    }
+                    if (roomAct != null) room.Status = roomAct.Status;
                 });
             }
 
