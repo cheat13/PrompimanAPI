@@ -68,38 +68,58 @@ namespace PrompimanAPI.Controllers
             await CollectionReservation.InsertOneAsync(res);
 
             // Create RoomActivated
-
-            var roomNoLst = res.Rooms.Select(r => r.RoomNo).ToList();
-            var rooms = await CollectionRoom.Find(r => roomNoLst.Contains(r._id)).ToListAsync();
-
-            var roomActLst = res.Rooms.Select(it =>
-                {
-                    var room = rooms.First(r => r._id == it.RoomNo);
-
-                    return new RoomActivated
-                    {
-                        _id = Guid.NewGuid().ToString(),
-                        GroupId = res._id,
-                        RoomNo = room._id,
-                        RoomType = room.RoomType,
-                        BedType = room.BedType,
-                        Rate = room.Rate,
-                        ArrivalDate = res.CheckInDate,
-                        Departure = res.CheckOutDate,
-                        Setting = it.Setting,
-                        Status = "จอง",
-                        Active = true,
-                        CreationDateTime = now,
-                        LastUpdate = now,
-                    };
-                }).ToList();
-
-            await CollectionRoomActivated.InsertManyAsync(roomActLst);
+            var req = new RoomActRequest
+            {
+                GroupId = res._id,
+                RoomSltLst = res.Rooms,
+                CheckInDate = res.CheckInDate,
+                CheckOutDate = res.CheckOutDate,
+                DateTimeNow = now,
+            };
+            await UpsertRoomAct(req);
 
             return new Response
             {
                 IsSuccess = true
             };
+        }
+
+        private async Task UpsertRoomAct(RoomActRequest req)
+        {
+            var roomNoLst = req.RoomSltLst.Select(r => r.RoomNo).ToList();
+            var rooms = await CollectionRoom.Find(r => roomNoLst.Contains(r._id)).ToListAsync();
+
+            var roomActLst = req.RoomSltLst.Select(it =>
+            {
+                var room = rooms.First(r => r._id == it.RoomNo);
+
+                return new RoomActivated
+                {
+                    _id = $"{req.GroupId}{room._id}",
+                    GroupId = req.GroupId,
+                    RoomNo = room._id,
+                    RoomType = room.RoomType,
+                    BedType = room.BedType,
+                    Rate = room.Rate,
+                    ArrivalDate = req.CheckInDate,
+                    Departure = req.CheckOutDate,
+                    Setting = it.Setting,
+                    Status = "จอง",
+                    Active = true,
+                    CreationDateTime = req.DateTimeNow,
+                    LastUpdate = req.DateTimeNow,
+                };
+            }).ToList();
+
+            var writeModels = roomActLst
+               .OrderBy(it => it.RoomNo)
+               .Select(it =>
+               new ReplaceOneModel<RoomActivated>(Builders<RoomActivated>.Filter.Eq(d => d._id, it._id), it)
+               {
+                   IsUpsert = true
+               });
+
+            await CollectionRoomActivated.BulkWriteAsync(writeModels);
         }
 
         [HttpPut("{id}")]
@@ -131,36 +151,20 @@ namespace PrompimanAPI.Controllers
             var oldRoomNoLst = roomActLst.Select(r => r.roomNo).ToList();
             var newRoomNoLst = res.Rooms.Select(r => r.RoomNo).ToList();
 
-            // Update RoomActivated
-            var updateRooms = newRoomNoLst.Intersect(oldRoomNoLst);
-            foreach (var roomNo in updateRooms)
+            // Upsert RoomActivated
+            var req = new RoomActRequest
             {
-                var arrivalDate = res.CheckInDate;
-                var departure = res.CheckOutDate;
-                var setting = res.Rooms.First(r => r.RoomNo == roomNo).Setting;
-
-                var defUpdateRoom = Builders<RoomActivated>.Update
-                    .Set(r => r.ArrivalDate, arrivalDate)
-                    .Set(r => r.Departure, departure)
-                    .Set(r => r.Setting, setting)
-                    .Set(r => r.LastUpdate, now);
-
-                var roomActId = roomActLst.First(r => r.roomNo == roomNo)._id;
-
-                await CollectionRoomActivated.UpdateOneAsync(r => r._id == roomActId, defUpdateRoom);
-            }
+                GroupId = res._id,
+                RoomSltLst = res.Rooms,
+                CheckInDate = res.CheckInDate,
+                CheckOutDate = res.CheckOutDate,
+                DateTimeNow = now,
+            };
+            await UpsertRoomAct(req);
 
             // Delete RoomActivated
             var removeRooms = oldRoomNoLst.Except(newRoomNoLst);
             if (removeRooms.Any()) await DeleteRoomAct(id, now, removeRooms);
-
-            // Create RoomActivated
-            var addRooms = newRoomNoLst.Except(oldRoomNoLst);
-            if (addRooms.Any())
-            {
-                var rooms = res.Rooms.Where(r => addRooms.Contains(r.RoomNo)).ToList();
-                await CreateRoomAct(rooms, id, res.CheckInDate, res.CheckOutDate, now);
-            }
 
             return new Response
             {
@@ -188,26 +192,6 @@ namespace PrompimanAPI.Controllers
             {
                 IsSuccess = true,
             };
-        }
-
-        private async Task CreateRoomAct(IEnumerable<RoomSelected> rooms, string groupId, DateTime checkInDate, DateTime checkOutDate, DateTime now)
-        {
-            var roomActLst = rooms.Select(it =>
-                new RoomActivated
-                {
-                    _id = Guid.NewGuid().ToString(),
-                    GroupId = groupId,
-                    RoomNo = it.RoomNo,
-                    ArrivalDate = checkInDate,
-                    Departure = checkOutDate,
-                    Setting = it.Setting,
-                    Status = "จอง",
-                    Active = true,
-                    CreationDateTime = now,
-                    LastUpdate = now,
-                }).ToList();
-
-            await CollectionRoomActivated.InsertManyAsync(roomActLst);
         }
 
         private async Task DeleteRoomAct(string groupId, DateTime now)
