@@ -9,6 +9,5 @@ namespace PrompimanAPI.Models
         public IEnumerable<RoomSelected> RoomSltLst { get; set; }
         public DateTime CheckInDate { get; set; }
         public DateTime CheckOutDate { get; set; }
-        public DateTime DateTimeNow { get; set; }
     }
 }
