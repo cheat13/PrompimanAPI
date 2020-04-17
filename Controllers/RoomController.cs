@@ -32,22 +32,29 @@ namespace PrompimanAPI.Controllers
         {
             var rooms = await CollectionRoom.Find(r => true).ToListAsync();
 
-            var roomActLst = await CollectionRoomActivated.Find(r => r.Active == true && !(r.Departure < req.CheckInDate || req.CheckOutDate < r.ArrivalDate)).ToListAsync();
+            var filter = CreateFilter(req.CheckInDate, req.CheckOutDate);
+            var roomActLst = await CollectionRoomActivated.Find(filter).ToListAsync();
             if (roomActLst.Any())
             {
-                var roomNoActLst = roomActLst.Select(it => it.RoomNo).ToList();
-
                 rooms.ForEach(room =>
                 {
                     var roomAct = roomActLst.FirstOrDefault(r => r.RoomNo == room._id);
-                    if (roomAct != null)
-                    {
-                        room.Status = roomAct.Status;
-                    }
+                    if (roomAct != null) room.Status = roomAct.Status;
                 });
             }
 
             return rooms;
+        }
+
+        private static FilterDefinition<RoomActivated> CreateFilter(DateTime checkInDate, DateTime checkOutDate)
+        {
+            var fb = Builders<RoomActivated>.Filter;
+            FilterDefinition<RoomActivated> carryFilter = fb.Where(r => r.Active == true);
+
+            var filter = fb.Where(r => !((r.ArrivalDate - checkOutDate).TotalHours >= 18 || (checkInDate - r.Departure).TotalHours >= 18));
+            carryFilter = filter & carryFilter;
+
+            return carryFilter;
         }
 
         // [HttpPost]
