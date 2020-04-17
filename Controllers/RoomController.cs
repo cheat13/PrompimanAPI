@@ -51,7 +51,7 @@ namespace PrompimanAPI.Controllers
             var fb = Builders<RoomActivated>.Filter;
             FilterDefinition<RoomActivated> carryFilter = fb.Where(r => r.Active == true);
 
-            var filter = fb.Where(r => !((r.ArrivalDate - checkOutDate).TotalHours >= 17 || (checkInDate - r.Departure).TotalHours >= 17));
+            var filter = fb.Where(r => !((r.ArrivalDate - checkOutDate).TotalHours >= 18 || (checkInDate - r.Departure).TotalHours >= 18));
             carryFilter = filter & carryFilter;
 
             return carryFilter;
