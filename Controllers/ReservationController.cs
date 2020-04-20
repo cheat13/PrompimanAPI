@@ -61,7 +61,7 @@ namespace PrompimanAPI.Controllers
             _now = DateTime.Now;
 
             // Create Reservation
-            res._id = Guid.NewGuid().ToString();
+            res._id = _now.Ticks.ToString();
             res.CreationDateTime = _now;
             res.LastUpdate = _now;
             res.Active = true;
@@ -142,7 +142,7 @@ namespace PrompimanAPI.Controllers
             // Upsert RoomActivated
             var req = new RoomActRequest
             {
-                GroupId = res._id,
+                GroupId = id,
                 RoomSltLst = res.Rooms,
                 CheckInDate = res.CheckInDate,
                 CheckOutDate = res.CheckOutDate,
