@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.Blob;
 using MongoDB.Driver;
+using PrompimanAPI.Dac;
 using PrompimanAPI.Models;
 using PrompimanAPI.Services;
 
@@ -16,31 +17,36 @@ namespace PrompimanAPI.Controllers
     [ApiController]
     public class RoomController : ControllerBase
     {
-        private readonly IDbService dbService;
+        private readonly IRoomDac roomDac;
+        private readonly IRoomActivatedDac roomActivatedDac;
 
-        public RoomController(IDbService dbService)
+        public RoomController(
+            IRoomDac roomDac,
+            IRoomActivatedDac roomActivatedDac)
         {
-            this.dbService = dbService;
+            this.roomDac = roomDac;
+            this.roomActivatedDac = roomActivatedDac;
         }
 
         [HttpPut]
         public async Task<IEnumerable<Room>> Get(DateRequest req)
         {
-            var rooms = await dbService.CollectionRoom.Find(r => true).ToListAsync();
+            var rooms = await roomDac.Gets(x => true);
+            var roomLst = rooms.ToList();
 
-            var roomActLst = await dbService.CollectionRoomActivated.Find(x => x.Active == true).ToListAsync();
+            var roomActLst = await roomActivatedDac.Gets(x => true);
             var qryRoomActLst = roomActLst.Where(r => !((r.ArrivalDate - req.CheckOutDate).TotalHours >= 18 || (req.CheckInDate - r.Departure).TotalHours >= 18));
 
             if (qryRoomActLst.Any())
             {
-                rooms.ForEach(room =>
+                roomLst.ForEach(room =>
                 {
                     var roomAct = qryRoomActLst.FirstOrDefault(r => r.RoomNo == room._id);
                     if (roomAct != null) room.Status = roomAct.Status;
                 });
             }
 
-            return rooms;
+            return roomLst;
         }
 
         // [HttpPost]

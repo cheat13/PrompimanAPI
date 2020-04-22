@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.Blob;
 using MongoDB.Driver;
+using PrompimanAPI.Dac;
 using PrompimanAPI.Models;
 using PrompimanAPI.Services;
 
@@ -16,24 +17,25 @@ namespace PrompimanAPI.Controllers
     [ApiController]
     public class MemberController : ControllerBase
     {
-        private readonly IDbService dbService;
         private readonly WebConfig webConfig;
+        private readonly IMemberDac memberDac;
 
-        public MemberController(IDbService dbService, WebConfig webConfig)
+        public MemberController(
+            WebConfig webConfig,
+            IMemberDac memberDac)
         {
-            this.dbService = dbService;
             this.webConfig = webConfig;
+            this.memberDac = memberDac;
         }
 
         [HttpGet("{page}/{size}")]
         public async Task<ActionResult<MemberListData>> Get(int page, int size, string word = "")
         {
             var filter = CreateFilter(word);
-            var memberQry = dbService.CollectionMember.Find(filter);
 
-            var count = await memberQry.CountDocumentsAsync();
+            var count = await memberDac.Count(filter);
             var start = Math.Max(0, page - 1) * size;
-            var members = await memberQry.SortByDescending(it => it._id).Skip(start).Limit(size).ToListAsync();
+            var members = await memberDac.Gets(filter, start, size);
 
             return new MemberListData
             {
@@ -67,20 +69,23 @@ namespace PrompimanAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Member>> GetById(string id)
         {
-            return await dbService.CollectionMember.Find(m => m._id == id).FirstOrDefaultAsync();
+            return await memberDac.Get(m => m._id == id);
         }
 
         [HttpGet("{idCard}")]
         public async Task<ActionResult<Member>> GetByIdCard(string idCard)
         {
-            return await dbService.CollectionMember.Find(m => m.IdCard == idCard).FirstOrDefaultAsync();
+            return await memberDac.Get(m => m.IdCard == idCard);
         }
 
         [HttpPost]
         public async Task<Response> Create([FromBody] Member member)
         {
-            var isOldMember = await dbService.CollectionMember.Find(m => (!string.IsNullOrEmpty(m.IdCard) && m.IdCard == member.IdCard)
-                || (!string.IsNullOrEmpty(m.PassportNo) && m.PassportNo == member.PassportNo)).AnyAsync();
+            var filter = Builders<Member>.Filter.Where(m =>
+                (!string.IsNullOrEmpty(m.IdCard) && m.IdCard == member.IdCard) ||
+                (!string.IsNullOrEmpty(m.PassportNo) && m.PassportNo == member.PassportNo));
+
+            var isOldMember = await memberDac.Any(filter);
 
             if (isOldMember)
             {
@@ -93,14 +98,15 @@ namespace PrompimanAPI.Controllers
             else
             {
                 var now = DateTime.Now;
+
                 member._id = now.Ticks.ToString();
                 member.CreationDateTime = now;
                 member.LastUpdate = now;
 
-                member.Nationality = member.Nationality ?? "ไทย";
-                member.Job = member.Job ?? "รับจ้าง";
+                if (string.IsNullOrEmpty(member.Nationality)) member.Nationality = "ไทย";
+                if (string.IsNullOrEmpty(member.Job)) member.Job = "รับจ้าง";
 
-                await dbService.CollectionMember.InsertOneAsync(member);
+                await memberDac.Create(member);
 
                 return new Response
                 {
@@ -114,7 +120,7 @@ namespace PrompimanAPI.Controllers
         {
             member.LastUpdate = DateTime.Now;
 
-            await dbService.CollectionMember.ReplaceOneAsync(m => m._id == id, member);
+            await memberDac.Update(m => m._id == id, member);
 
             return new Response
             {

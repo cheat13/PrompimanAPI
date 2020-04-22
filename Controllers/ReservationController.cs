@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
+using PrompimanAPI.Dac;
 using PrompimanAPI.Models;
 using PrompimanAPI.Services;
 
@@ -13,12 +14,19 @@ namespace PrompimanAPI.Controllers
     [ApiController]
     public class ReservationController : ControllerBase
     {
-        private readonly IDbService dbService;
+        private readonly IRoomDac roomDac;
+        private readonly IReservationDac reservationDac;
+        private readonly IRoomActivatedDac roomActivatedDac;
         private readonly DateTime now;
 
-        public ReservationController(IDbService dbService)
+        public ReservationController(
+            IRoomDac roomDac,
+            IReservationDac reservationDac,
+            IRoomActivatedDac roomActivatedDac)
         {
-            this.dbService = dbService;
+            this.roomDac = roomDac;
+            this.reservationDac = reservationDac;
+            this.roomActivatedDac = roomActivatedDac;
             this.now = DateTime.Now;
         }
 
@@ -26,7 +34,7 @@ namespace PrompimanAPI.Controllers
         public async Task<IEnumerable<Reservation>> Get(string word)
         {
             var filter = CreateFilter(word);
-            return await dbService.CollectionReservation.Find(filter).SortBy(x => x.CheckInDate).ToListAsync();
+            return await reservationDac.Gets(filter);
         }
 
         private static FilterDefinition<Reservation> CreateFilter(string word)
@@ -47,7 +55,7 @@ namespace PrompimanAPI.Controllers
         [HttpGet("{id}")]
         public async Task<Reservation> GetById(string id)
         {
-            return await dbService.CollectionReservation.Find(r => r._id == id).FirstOrDefaultAsync();
+            return await reservationDac.Get(r => r._id == id);
         }
 
         [HttpPost]
@@ -60,7 +68,7 @@ namespace PrompimanAPI.Controllers
             res.IsConfirm = false;
             res.Active = true;
 
-            await dbService.CollectionReservation.InsertOneAsync(res);
+            await reservationDac.Create(res);
 
             // Create RoomActivated
             var req = new RoomActRequest
@@ -81,7 +89,7 @@ namespace PrompimanAPI.Controllers
         private async Task UpsertRoomAct(RoomActRequest req)
         {
             var roomNoLst = req.RoomSltLst.Select(r => r.RoomNo).ToList();
-            var rooms = await dbService.CollectionRoom.Find(r => roomNoLst.Contains(r._id)).ToListAsync();
+            var rooms = await roomDac.Gets(r => roomNoLst.Contains(r._id));
 
             var roomActLst = req.RoomSltLst.Select(it =>
             {
@@ -113,23 +121,17 @@ namespace PrompimanAPI.Controllers
                    IsUpsert = true
                });
 
-            await dbService.CollectionRoomActivated.BulkWriteAsync(writeModels);
+            await roomActivatedDac.Creates(writeModels);
         }
 
         [HttpPut("{id}")]
         public async Task<Response> Update(string id, int addReserve, [FromBody] Reservation res)
         {
             // Update Reservation
-            var defUpdateRes = Builders<Reservation>.Update
-                .Set(r => r.Name, res.Name)
-                .Set(r => r.Telephone, res.Telephone)
-                .Set(r => r.CheckInDate, res.CheckInDate)
-                .Set(r => r.CheckOutDate, res.CheckOutDate)
-                .Set(r => r.Rooms, res.Rooms)
-                .Set(r => r.Reserve, res.Reserve + addReserve)
-                .Set(r => r.LastUpdate, now);
+            res.Reserve += addReserve;
+            res.LastUpdate = now;
 
-            await dbService.CollectionReservation.UpdateOneAsync(r => r._id == id, defUpdateRes);
+            await reservationDac.Update(r => r._id == id, res);
 
             // Upsert RoomActivated
             var req = new RoomActRequest
@@ -144,7 +146,7 @@ namespace PrompimanAPI.Controllers
             // Delete RoomActivated
             var roomNoLst = res.Rooms.Select(r => r.RoomNo).ToList();
             var filter = Builders<RoomActivated>.Filter.Where(x => x.GroupId == id && x.Active == true && !roomNoLst.Contains(x.RoomNo));
-            var roomNotActLst = await dbService.CollectionRoomActivated.Find(filter).ToListAsync();
+            var roomNotActLst = await roomActivatedDac.Gets(filter);
 
             if (roomNotActLst.Any())
             {
@@ -168,7 +170,7 @@ namespace PrompimanAPI.Controllers
                 .Set(r => r.Note, note)
                 .Set(r => r.LastUpdate, now);
 
-            await dbService.CollectionReservation.UpdateOneAsync(r => r._id == id, def);
+            await reservationDac.Update(r => r._id == id, def);
 
             // Delete RoomActivated
             var filter = Builders<RoomActivated>.Filter.Where(r => r.GroupId == id && r.Active == true);
@@ -187,7 +189,7 @@ namespace PrompimanAPI.Controllers
                 .Set(r => r.Active, false)
                 .Set(r => r.LastUpdate, now);
 
-            await dbService.CollectionRoomActivated.UpdateManyAsync(filter, def);
+            await roomActivatedDac.Updates(filter, def);
         }
 
         [HttpPut("{id}")]
@@ -197,7 +199,7 @@ namespace PrompimanAPI.Controllers
                 .Set(it => it.IsConfirm, true)
                 .Set(it => it.LastUpdate, now);
 
-            await dbService.CollectionReservation.UpdateOneAsync(it => it._id == id, def);
+            await reservationDac.Update(it => it._id == id, def);
 
             return new Response
             {
