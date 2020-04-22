@@ -12,6 +12,7 @@ namespace PrompimanAPI.Models
         public DateTime CheckOutDate { get; set; }
         public IEnumerable<RoomSelected> Rooms { get; set; }
         public int Reserve { get; set; }
+        public bool IsConfirm { get; set; }
         public bool Active { get; set; }
         public string Note { get; set; }
         public DateTime CreationDateTime { get; set; }
