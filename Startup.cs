@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using PrompimanAPI.Services;
 
 namespace PrompimanAPI
 {
@@ -39,6 +40,7 @@ namespace PrompimanAPI
 
             services.AddTransient(x => dbConfig);
             services.AddTransient(x => webConfig);
+            services.AddSingleton<IDbService, DbService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

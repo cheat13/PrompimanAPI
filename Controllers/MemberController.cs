@@ -19,7 +19,7 @@ namespace PrompimanAPI.Controllers
         private readonly IDbService dbService;
         private readonly WebConfig webConfig;
 
-        public MemberController(Services.IDbService dbService, WebConfig webConfig)
+        public MemberController(IDbService dbService, WebConfig webConfig)
         {
             this.dbService = dbService;
             this.webConfig = webConfig;
