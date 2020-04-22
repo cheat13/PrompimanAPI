@@ -15,7 +15,7 @@ namespace PrompimanAPI.Controllers
         public IMongoCollection<Reservation> CollectionReservation { get; set; }
         public IMongoCollection<RoomActivated> CollectionRoomActivated { get; set; }
         public IMongoCollection<Room> CollectionRoom { get; set; }
-        private DateTime _now { get; set; }
+        private DateTime _now;
 
         public ReservationController()
         {
@@ -25,6 +25,8 @@ namespace PrompimanAPI.Controllers
             CollectionReservation = database.GetCollection<Reservation>("reservation");
             CollectionRoomActivated = database.GetCollection<RoomActivated>("roomActivated");
             CollectionRoom = database.GetCollection<Room>("room");
+            
+            _now = DateTime.Now;
         }
 
         [HttpGet]
@@ -58,12 +60,11 @@ namespace PrompimanAPI.Controllers
         [HttpPost]
         public async Task<Response> Create([FromBody] Reservation res)
         {
-            _now = DateTime.Now;
-
             // Create Reservation
             res._id = _now.Ticks.ToString();
             res.CreationDateTime = _now;
             res.LastUpdate = _now;
+            res.IsConfirm = false;
             res.Active = true;
 
             await CollectionReservation.InsertOneAsync(res);
@@ -125,8 +126,6 @@ namespace PrompimanAPI.Controllers
         [HttpPut("{id}")]
         public async Task<Response> Update(string id, int addReserve, [FromBody] Reservation res)
         {
-            _now = DateTime.Now;
-
             // Update Reservation
             var defUpdateRes = Builders<Reservation>.Update
                 .Set(r => r.Name, res.Name)
@@ -170,8 +169,6 @@ namespace PrompimanAPI.Controllers
         [HttpPut("{id}")]
         public async Task<Response> Delete(string id, string note)
         {
-            _now = DateTime.Now;
-
             // Delete Reservation
             var def = Builders<Reservation>.Update
                 .Set(r => r.Active, false)
@@ -198,6 +195,21 @@ namespace PrompimanAPI.Controllers
                 .Set(r => r.LastUpdate, _now);
 
             await CollectionRoomActivated.UpdateManyAsync(filter, def);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<Response> Confirm(string id)
+        {
+            var def = Builders<Reservation>.Update
+                .Set(it => it.IsConfirm, true)
+                .Set(it => it.LastUpdate, _now);
+
+            await CollectionReservation.UpdateOneAsync(it => it._id == id, def);
+
+            return new Response
+            {
+                IsSuccess = true
+            };
         }
     }
 }
