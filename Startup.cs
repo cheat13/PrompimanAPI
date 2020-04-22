@@ -33,6 +33,12 @@ namespace PrompimanAPI
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
             });
+
+            var webConfig = Configuration.GetSection("WebConfig").Get<WebConfig>();
+            var dbConfig = Configuration.GetSection("MongoDbConfig").Get<DbConfig>();
+
+            services.AddTransient(x => dbConfig);
+            services.AddTransient(x => webConfig);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

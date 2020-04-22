@@ -8,6 +8,7 @@ using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.Blob;
 using MongoDB.Driver;
 using PrompimanAPI.Models;
+using PrompimanAPI.Services;
 
 namespace PrompimanAPI.Controllers
 {
@@ -15,21 +16,20 @@ namespace PrompimanAPI.Controllers
     [ApiController]
     public class MemberController : ControllerBase
     {
-        public IMongoCollection<Member> CollectionMember { get; set; }
+        private readonly IDbService dbService;
+        private readonly WebConfig webConfig;
 
-        public MemberController()
+        public MemberController(Services.IDbService dbService, WebConfig webConfig)
         {
-            var client = new MongoClient("mongodb://firstclass:Th35F1rstCla55@104.215.253.165/hotel");
-            var database = client.GetDatabase("hotel");
-
-            CollectionMember = database.GetCollection<Member>("member");
+            this.dbService = dbService;
+            this.webConfig = webConfig;
         }
 
         [HttpGet("{page}/{size}")]
         public async Task<ActionResult<MemberListData>> Get(int page, int size, string word = "")
         {
             var filter = CreateFilter(word);
-            var memberQry = CollectionMember.Find(filter);
+            var memberQry = dbService.CollectionMember.Find(filter);
 
             var count = await memberQry.CountDocumentsAsync();
             var start = Math.Max(0, page - 1) * size;
@@ -67,19 +67,19 @@ namespace PrompimanAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Member>> GetById(string id)
         {
-            return await CollectionMember.Find(m => m._id == id).FirstOrDefaultAsync();
+            return await dbService.CollectionMember.Find(m => m._id == id).FirstOrDefaultAsync();
         }
 
         [HttpGet("{idCard}")]
         public async Task<ActionResult<Member>> GetByIdCard(string idCard)
         {
-            return await CollectionMember.Find(m => m.IdCard == idCard).FirstOrDefaultAsync();
+            return await dbService.CollectionMember.Find(m => m.IdCard == idCard).FirstOrDefaultAsync();
         }
 
         [HttpPost]
         public async Task<Response> Create([FromBody] Member member)
         {
-            var isOldMember = await CollectionMember.Find(m => (!string.IsNullOrEmpty(m.IdCard) && m.IdCard == member.IdCard)
+            var isOldMember = await dbService.CollectionMember.Find(m => (!string.IsNullOrEmpty(m.IdCard) && m.IdCard == member.IdCard)
                 || (!string.IsNullOrEmpty(m.PassportNo) && m.PassportNo == member.PassportNo)).AnyAsync();
 
             if (isOldMember)
@@ -100,7 +100,7 @@ namespace PrompimanAPI.Controllers
                 member.Nationality = member.Nationality ?? "ไทย";
                 member.Job = member.Job ?? "รับจ้าง";
 
-                await CollectionMember.InsertOneAsync(member);
+                await dbService.CollectionMember.InsertOneAsync(member);
 
                 return new Response
                 {
@@ -109,108 +109,12 @@ namespace PrompimanAPI.Controllers
             }
         }
 
-        // [HttpPost]
-        // public async Task<Response> CreateTh([FromBody] ThMember member)
-        // {
-        //     var isOldMember = await CollectionMember.Find(m => m.IdCard == member.IdCard).AnyAsync();
-        //     if (isOldMember)
-        //     {
-        //         return new Response
-        //         {
-        //             IsSuccess = false,
-        //             ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
-        //         };
-        //     }
-        //     else
-        //     {
-        //         var now = DateTime.Now;
-
-        //         var newMember = new Member
-        //         {
-        //             _id = now.Ticks.ToString(),
-        //             IdCard = member.IdCard,
-        //             PassportNo = "",
-        //             Th_Prefix = member.Th_Prefix,
-        //             Th_Firstname = member.Th_Firstname,
-        //             Th_Lastname = member.Th_Lastname,
-        //             En_Prefix = member.En_Prefix,
-        //             En_Firstname = member.En_Firstname,
-        //             En_Lastname = member.En_Lastname,
-        //             Sex = member.Sex,
-        //             Birthday = member.Birthday,
-        //             Address = member.Address,
-        //             IssueDate = member.IssueDate,
-        //             ExpiryDate = member.ExpiryDate,
-        //             Telephone = member.Telephone,
-        //             Job = member.Job,
-        //             Nationality = "ไทย",
-        //             CreationDateTime = now,
-        //             LastUpdate = now,
-        //         };
-
-        //         await CollectionMember.InsertOneAsync(newMember);
-
-        //         return new Response
-        //         {
-        //             IsSuccess = true,
-        //         };
-        //     }
-        // }
-
-        // [HttpPost]
-        // public async Task<Response> CreateEn([FromBody] EnMember member)
-        // {
-        //     var isOldMember = await CollectionMember.Find(m => m.PassportNo == member.PassportNo).AnyAsync();
-        //     if (isOldMember)
-        //     {
-        //         return new Response
-        //         {
-        //             IsSuccess = false,
-        //             ErrorMessage = "เป็นสมาชิกอยู่แล้ว",
-        //         };
-        //     }
-        //     else
-        //     {
-        //         var now = DateTime.Now;
-
-        //         var newMember = new Member
-        //         {
-        //             _id = now.Ticks.ToString(),
-        //             IdCard = "",
-        //             PassportNo = member.PassportNo,
-        //             Th_Prefix = "",
-        //             Th_Firstname = "",
-        //             Th_Lastname = "",
-        //             En_Prefix = member.En_Prefix,
-        //             En_Firstname = member.En_Firstname,
-        //             En_Lastname = member.En_Lastname,
-        //             Sex = member.Sex,
-        //             Birthday = member.Birthday,
-        //             Address = null,
-        //             IssueDate = member.IssueDate,
-        //             ExpiryDate = member.ExpiryDate,
-        //             Telephone = member.Telephone,
-        //             Job = "รับจ้าง",
-        //             Nationality = member.Nationality,
-        //             CreationDateTime = now,
-        //             LastUpdate = now,
-        //         };
-
-        //         await CollectionMember.InsertOneAsync(newMember);
-
-        //         return new Response
-        //         {
-        //             IsSuccess = true,
-        //         };
-        //     }
-        // }
-
         [HttpPut("{id}")]
         public async Task<Response> Update(string id, [FromBody] Member member)
         {
             member.LastUpdate = DateTime.Now;
 
-            await CollectionMember.ReplaceOneAsync(m => m._id == id, member);
+            await dbService.CollectionMember.ReplaceOneAsync(m => m._id == id, member);
 
             return new Response
             {
@@ -221,13 +125,11 @@ namespace PrompimanAPI.Controllers
         [HttpPost]
         public async Task<PhotoResponse> UploadPhoto([FromBody] PhotoRequest request)
         {
-            var connectionString = "DefaultEndpointsProtocol=https;AccountName=prompiman;AccountKey=YWxt0AZK5L7CcMRWb+0t1mvnmzwdJcxI6X/D8Q2sVOuQKEXZqv8KTtM89Al9VAbu8JewsemPx66+QZhlI7VkhQ==;EndpointSuffix=core.windows.net";
-
             CloudStorageAccount storageAccount;
-            if (CloudStorageAccount.TryParse(connectionString, out storageAccount))
+            if (CloudStorageAccount.TryParse(webConfig.StorageConnectionString, out storageAccount))
             {
-                var url = storageAccount.BlobStorageUri.PrimaryUri.AbsoluteUri;
-                var containerName = "photos/";
+                var baseUrl = webConfig.StorageBaseUrl;
+                var containerName = webConfig.StorageContainerName;
                 var blobName = $"{request.IdCard}.png";
 
                 var cloudBlobClient = storageAccount.CreateCloudBlobClient();
@@ -248,7 +150,7 @@ namespace PrompimanAPI.Controllers
                 return new PhotoResponse
                 {
                     IsSuccess = true,
-                    Path = $"{url}{containerName}{blobName}",
+                    Path = $"{baseUrl}/{containerName}/{blobName}",
                 };
             }
             else
