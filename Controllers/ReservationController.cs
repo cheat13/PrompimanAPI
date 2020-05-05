@@ -18,23 +18,26 @@ namespace PrompimanAPI.Controllers
         private readonly IReservationDac reservationDac;
         private readonly IRoomActivatedDac roomActivatedDac;
         private readonly DateTime now;
+        private readonly IRoomActService roomActService;
 
         public ReservationController(
             IRoomDac roomDac,
             IReservationDac reservationDac,
-            IRoomActivatedDac roomActivatedDac)
+            IRoomActivatedDac roomActivatedDac,
+            IRoomActService roomActService)
         {
             this.roomDac = roomDac;
             this.reservationDac = reservationDac;
             this.roomActivatedDac = roomActivatedDac;
             this.now = DateTime.Now;
+            this.roomActService = roomActService;
         }
 
         [HttpGet]
         public async Task<IEnumerable<Reservation>> Get(string word)
         {
-            var filter = CreateFilter(word);
-            return await reservationDac.Gets(filter);
+            var filterReservation = CreateFilter(word);
+            return await reservationDac.Gets(filterReservation);
         }
 
         private static FilterDefinition<Reservation> CreateFilter(string word)
@@ -63,15 +66,14 @@ namespace PrompimanAPI.Controllers
         {
             // Create Reservation
             res._id = now.Ticks.ToString();
+            res.Active = true;
             res.CreationDateTime = now;
             res.LastUpdate = now;
-            res.IsConfirm = false;
-            res.Active = true;
 
             await reservationDac.Create(res);
 
             // Create RoomActivated
-            var req = new RoomActRequest
+            var req = new CreateRoomActRequest
             {
                 GroupId = res._id,
                 RoomSltLst = res.Rooms,
@@ -86,32 +88,9 @@ namespace PrompimanAPI.Controllers
             };
         }
 
-        private async Task UpsertRoomAct(RoomActRequest req)
+        private async Task UpsertRoomAct(CreateRoomActRequest req)
         {
-            var roomNoLst = req.RoomSltLst.Select(r => r.RoomNo).ToList();
-            var rooms = await roomDac.Gets(r => roomNoLst.Contains(r._id));
-
-            var roomActLst = req.RoomSltLst.Select(it =>
-            {
-                var room = rooms.First(r => r._id == it.RoomNo);
-
-                return new RoomActivated
-                {
-                    _id = $"{req.GroupId}{room._id}",
-                    GroupId = req.GroupId,
-                    RoomNo = room._id,
-                    RoomType = room.RoomType,
-                    BedType = room.BedType,
-                    Rate = room.Rate,
-                    ArrivalDate = req.CheckInDate,
-                    Departure = req.CheckOutDate,
-                    Setting = it.Setting,
-                    Status = "จอง",
-                    Active = true,
-                    CreationDateTime = now,
-                    LastUpdate = now,
-                };
-            }).ToList();
+            var roomActLst = await roomActService.CreateRoomActLst(req, "จอง", now);
 
             var writeModels = roomActLst
                .OrderBy(it => it.RoomNo)
@@ -134,7 +113,7 @@ namespace PrompimanAPI.Controllers
             await reservationDac.Update(r => r._id == id, res);
 
             // Upsert RoomActivated
-            var req = new RoomActRequest
+            var req = new CreateRoomActRequest
             {
                 GroupId = id,
                 RoomSltLst = res.Rooms,

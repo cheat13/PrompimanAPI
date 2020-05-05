@@ -8,5 +8,6 @@ namespace PrompimanAPI
         public string Reservation { get; set; }
         public string RoomActivated { get; set; }
         public string Room { get; set; }
+        public string Master { get; set; }
     }
 }

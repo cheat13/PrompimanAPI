@@ -21,7 +21,7 @@ namespace PrompimanAPI.Dac
             => await Collection.Find(expression).FirstOrDefaultAsync();
 
         public async Task<IEnumerable<Member>> Gets(FilterDefinition<Member> filter, int skip, int limit)
-            => await Collection.Find(filter).SortBy(x => x._id).Skip(skip).Limit(limit).ToListAsync();
+            => await Collection.Find(filter).SortBy(x => x.CreationDateTime).Skip(skip).Limit(limit).ToListAsync();
 
         public async Task Create(Member document)
             => await Collection.InsertOneAsync(document);
