@@ -9,6 +9,7 @@ namespace PrompimanAPI.Services
         public IMongoCollection<Reservation> CollectionReservation { get; set; }
         public IMongoCollection<RoomActivated> CollectionRoomActivated { get; set; }
         public IMongoCollection<Room> CollectionRoom { get; set; }
+        public IMongoCollection<Master> CollectionMaster { get; set; }
 
         public DbService(DbConfig dbConfig)
         {
@@ -19,6 +20,7 @@ namespace PrompimanAPI.Services
             CollectionReservation = database.GetCollection<Reservation>(dbConfig.Reservation);
             CollectionRoomActivated = database.GetCollection<RoomActivated>(dbConfig.RoomActivated);
             CollectionRoom = database.GetCollection<Room>(dbConfig.Room);
+            CollectionMaster = database.GetCollection<Master>(dbConfig.Master);
         }
     }
 }

@@ -46,6 +46,8 @@ namespace PrompimanAPI
             services.AddTransient<IReservationDac, ReservationDac>();
             services.AddTransient<IRoomActivatedDac, RoomActivatedDac>();
             services.AddTransient<IRoomDac, RoomDac>();
+            services.AddTransient<IMasterDac, MasterDac>();
+            services.AddTransient<IRoomActService, RoomActService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

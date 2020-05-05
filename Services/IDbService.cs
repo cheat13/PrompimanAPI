@@ -9,5 +9,6 @@ namespace PrompimanAPI.Services
         IMongoCollection<Reservation> CollectionReservation { get; set; }
         IMongoCollection<RoomActivated> CollectionRoomActivated { get; set; }
         IMongoCollection<Room> CollectionRoom { get; set; }
+        IMongoCollection<Master> CollectionMaster { get; set; }
     }
 }

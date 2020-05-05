@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace PrompimanAPI.Models
 {
-    public class RoomActRequest
+    public class MasterDetail
     {
-        public string MasterId { get; set; }
+        public Master Master { get; set; }
         public IEnumerable<RoomActivated> RoomActLst { get; set; }
     }
 }

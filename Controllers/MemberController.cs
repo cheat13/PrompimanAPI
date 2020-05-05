@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Storage;
@@ -9,7 +6,6 @@ using Microsoft.Azure.Storage.Blob;
 using MongoDB.Driver;
 using PrompimanAPI.Dac;
 using PrompimanAPI.Models;
-using PrompimanAPI.Services;
 
 namespace PrompimanAPI.Controllers
 {
@@ -29,7 +25,7 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpGet("{page}/{size}")]
-        public async Task<ActionResult<MemberListData>> Get(int page, int size, string word = "")
+        public async Task<ActionResult<DataPaging<Member>>> Get(int page, int size, string word = "")
         {
             var filter = CreateFilter(word);
 
@@ -37,9 +33,9 @@ namespace PrompimanAPI.Controllers
             var start = Math.Max(0, page - 1) * size;
             var members = await memberDac.Gets(filter, start, size);
 
-            return new MemberListData
+            return new DataPaging<Member>
             {
-                Members = members,
+                DataList = members,
                 Page = page,
                 Count = (int)count,
             };

@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.Blob;
 using MongoDB.Driver;
 using PrompimanAPI.Dac;
 using PrompimanAPI.Models;
-using PrompimanAPI.Services;
 
 namespace PrompimanAPI.Controllers
 {
