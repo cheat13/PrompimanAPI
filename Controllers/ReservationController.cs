@@ -18,41 +18,29 @@ namespace PrompimanAPI.Controllers
         private readonly IReservationDac reservationDac;
         private readonly IRoomActivatedDac roomActivatedDac;
         private readonly DateTime now;
+        private readonly IReservationService reservationService;
         private readonly IRoomActService roomActService;
 
         public ReservationController(
             IRoomDac roomDac,
             IReservationDac reservationDac,
             IRoomActivatedDac roomActivatedDac,
+            IReservationService reservationService,
             IRoomActService roomActService)
         {
             this.roomDac = roomDac;
             this.reservationDac = reservationDac;
             this.roomActivatedDac = roomActivatedDac;
             this.now = DateTime.Now;
+            this.reservationService = reservationService;
             this.roomActService = roomActService;
         }
 
         [HttpGet]
         public async Task<IEnumerable<Reservation>> Get(string word)
         {
-            var filterReservation = CreateFilter(word);
+            var filterReservation = reservationService.CreateFilter(word);
             return await reservationDac.Gets(filterReservation);
-        }
-
-        private static FilterDefinition<Reservation> CreateFilter(string word)
-        {
-            var fb = Builders<Reservation>.Filter;
-            FilterDefinition<Reservation> carryFilter = fb.Where(r => r.Active == true);
-
-            if (!string.IsNullOrEmpty(word))
-            {
-                word = word.ToLower();
-                var filter = fb.Where(r => r.Name.Contains(word) || r.Telephone.Contains(word));
-                carryFilter = filter & carryFilter;
-            }
-
-            return carryFilter;
         }
 
         [HttpGet("{id}")]
@@ -80,27 +68,12 @@ namespace PrompimanAPI.Controllers
                 CheckInDate = res.CheckInDate,
                 CheckOutDate = res.CheckOutDate,
             };
-            await UpsertRoomAct(req);
+            await roomActService.Upsert(req, now);
 
             return new Response
             {
                 IsSuccess = true
             };
-        }
-
-        private async Task UpsertRoomAct(CreateRoomActRequest req)
-        {
-            var roomActLst = await roomActService.CreateRoomActLst(req, "จอง", now);
-
-            var writeModels = roomActLst
-               .OrderBy(it => it.RoomNo)
-               .Select(it =>
-               new ReplaceOneModel<RoomActivated>(Builders<RoomActivated>.Filter.Eq(d => d._id, it._id), it)
-               {
-                   IsUpsert = true
-               });
-
-            await roomActivatedDac.Creates(writeModels);
         }
 
         [HttpPut("{id}")]
@@ -120,7 +93,7 @@ namespace PrompimanAPI.Controllers
                 CheckInDate = res.CheckInDate,
                 CheckOutDate = res.CheckOutDate,
             };
-            await UpsertRoomAct(req);
+            await roomActService.Upsert(req, now);
 
             // Delete RoomActivated
             var roomNoLst = res.Rooms.Select(r => r.RoomNo).ToList();
@@ -131,7 +104,7 @@ namespace PrompimanAPI.Controllers
             {
                 var roomActIdLst = roomNotActLst.Select(it => it._id).ToList();
                 var filterDel = Builders<RoomActivated>.Filter.Where(r => roomActIdLst.Contains(r._id));
-                await DeleteRoomAct(filterDel);
+                await roomActService.Delete(filterDel, now);
             };
 
             return new Response
@@ -153,22 +126,12 @@ namespace PrompimanAPI.Controllers
 
             // Delete RoomActivated
             var filter = Builders<RoomActivated>.Filter.Where(r => r.GroupId == id && r.Active == true);
-            await DeleteRoomAct(filter);
+            await roomActService.Delete(filter, now);
 
             return new Response
             {
                 IsSuccess = true,
             };
-        }
-
-        private async Task DeleteRoomAct(FilterDefinition<RoomActivated> filter)
-        {
-            var def = Builders<RoomActivated>.Update
-                .Set(r => r.Status, "ยกเลิก")
-                .Set(r => r.Active, false)
-                .Set(r => r.LastUpdate, now);
-
-            await roomActivatedDac.Updates(filter, def);
         }
 
         [HttpPut("{id}")]

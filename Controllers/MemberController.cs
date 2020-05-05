@@ -6,6 +6,7 @@ using Microsoft.Azure.Storage.Blob;
 using MongoDB.Driver;
 using PrompimanAPI.Dac;
 using PrompimanAPI.Models;
+using PrompimanAPI.Services;
 
 namespace PrompimanAPI.Controllers
 {
@@ -15,23 +16,27 @@ namespace PrompimanAPI.Controllers
     {
         private readonly WebConfig webConfig;
         private readonly IMemberDac memberDac;
+        private readonly IMemberService memberService;
 
         public MemberController(
             WebConfig webConfig,
-            IMemberDac memberDac)
+            IMemberDac memberDac,
+            IMemberService memberService)
         {
             this.webConfig = webConfig;
             this.memberDac = memberDac;
+            this.memberService = memberService;
         }
 
         [HttpGet("{page}/{size}")]
         public async Task<ActionResult<DataPaging<Member>>> Get(int page, int size, string word = "")
         {
-            var filter = CreateFilter(word);
+            var filter = memberService.CreateFilter(word);
 
-            var count = await memberDac.Count(filter);
             var start = Math.Max(0, page - 1) * size;
             var members = await memberDac.Gets(filter, start, size);
+            
+            var count = await memberDac.Count(filter);
 
             return new DataPaging<Member>
             {
@@ -39,27 +44,6 @@ namespace PrompimanAPI.Controllers
                 Page = page,
                 Count = (int)count,
             };
-        }
-
-        private static FilterDefinition<Member> CreateFilter(string word)
-        {
-            var fb = Builders<Member>.Filter;
-            FilterDefinition<Member> carryFilter = fb.Where(m => true);
-
-            if (!string.IsNullOrEmpty(word))
-            {
-                word = word.ToLower();
-                var filter = fb.Where(m => m.IdCard.Contains(word)
-                    || m.PassportNo.ToLower().Contains(word)
-                    || m.Th_Firstname.Contains(word)
-                    || m.Th_Lastname.Contains(word)
-                    || m.En_Firstname.ToLower().Contains(word)
-                    || m.En_Lastname.ToLower().Contains(word)
-                    || m.Telephone.Contains(word));
-                carryFilter = filter & carryFilter;
-            }
-
-            return carryFilter;
         }
 
         [HttpGet("{id}")]

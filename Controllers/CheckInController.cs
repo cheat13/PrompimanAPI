@@ -18,18 +18,21 @@ namespace PrompimanAPI.Controllers
         private readonly IRoomDac roomDac;
         private readonly IRoomActivatedDac roomActivatedDac;
         private readonly DateTime now;
+        private readonly IMasterService masterService;
         private readonly IRoomActService roomActService;
 
         public CheckInController(
             IMasterDac masterDac,
             IRoomDac roomDac,
             IRoomActivatedDac roomActivatedDac,
+            IMasterService masterService,
             IRoomActService roomActService)
         {
             this.masterDac = masterDac;
             this.roomDac = roomDac;
             this.roomActivatedDac = roomActivatedDac;
             this.now = DateTime.Now;
+            this.masterService = masterService;
             this.roomActService = roomActService;
         }
 
@@ -51,24 +54,9 @@ namespace PrompimanAPI.Controllers
             };
             var status = "เข้าพัก";
 
-            var roomActLst = await roomActService.CreateRoomActLst(req, status, now);
+            var roomActLst = await roomActService.Create(req, status, now);
 
-            return SetSelected(roomActLst);
-        }
-
-        private IEnumerable<RoomActivated> SetSelected(IEnumerable<RoomActivated> roomActLst, string roomId = null)
-        {
-            var qry = roomActLst.ToList();
-
-            qry.ForEach(it =>
-            {
-                if (string.IsNullOrEmpty(roomId) || it._id == roomId)
-                {
-                    it.ExpenseList.ToList().ForEach(i => i.IsSelected = true);
-                }
-            });
-
-            return qry;
+            return roomActService.SetSelected(roomActLst);
         }
 
         [HttpPut]
@@ -81,7 +69,7 @@ namespace PrompimanAPI.Controllers
 
             var roomActLst = req.RoomActLst.Select(it =>
                 {
-                    var calc = CalculateExpense(it.ExpenseList);
+                    var calc = roomActService.CalculateExpense(it.ExpenseList, now);
 
                     return new RoomActivated
                     {
@@ -147,37 +135,10 @@ namespace PrompimanAPI.Controllers
             };
         }
 
-        private CalculateExpense CalculateExpense(IEnumerable<Expense> expenseList)
-        {
-            var qry = expenseList.ToList();
-
-            qry.ForEach(expense =>
-            {
-                if (expense.IsSelected == true)
-                {
-                    expense.IsPaid = true;
-                    expense.IsSelected = false;
-                }
-                expense.CreationDateTime = now;
-            });
-
-            var totalCost = qry.Sum(expense => expense.TotalCost);
-            var paid = qry.Where(expense => expense.IsPaid == true).Sum(expense => expense.TotalCost);
-            var remaining = qry.Where(expense => expense.IsPaid == false).Sum(expense => expense.TotalCost);
-
-            return new CalculateExpense
-            {
-                ExpenseList = qry,
-                TotalCost = totalCost,
-                Paid = paid,
-                Remaining = remaining,
-            };
-        }
-
         [HttpGet("{page}/{size}")]
         public async Task<ActionResult<DataPaging<Master>>> Get(int page, int size, string word = "")
         {
-            var filter = CreateFilter(word);
+            var filter = masterService.CreateFilter(word);
 
             var count = await masterDac.Count(filter);
             var start = Math.Max(0, page - 1) * size;
@@ -189,24 +150,6 @@ namespace PrompimanAPI.Controllers
                 Page = page,
                 Count = (int)count,
             };
-        }
-
-        private static FilterDefinition<Master> CreateFilter(string word)
-        {
-            var fb = Builders<Master>.Filter;
-            FilterDefinition<Master> carryFilter = fb.Where(m => m.Active == true);
-
-            if (!string.IsNullOrEmpty(word))
-            {
-                word = word.ToLower();
-                var filter = fb.Where(m => m.Name.ToLower().Contains(word)
-                    || m.GroupName.ToLower().Contains(word)
-                    || m.Telephone.Contains(word)
-                    || m.Rooms.Any(room => room.RoomNo == word));
-                carryFilter = filter & carryFilter;
-            }
-
-            return carryFilter;
         }
 
         [HttpGet("{masterId}")]
@@ -227,7 +170,7 @@ namespace PrompimanAPI.Controllers
         {
             var roomActLst = await roomActivatedDac.Gets(x => x.GroupId == masterId);
 
-            return SetSelected(roomActLst, roomId);
+            return roomActService.SetSelected(roomActLst, roomId);
         }
 
         [HttpPut]
@@ -237,7 +180,7 @@ namespace PrompimanAPI.Controllers
 
             foreach (var roomAct in req.RoomActLst)
             {
-                var calc = CalculateExpense(roomAct.ExpenseList);
+                var calc = roomActService.CalculateExpense(roomAct.ExpenseList, now);
                 calcLst.Add(calc);
 
                 var anySelect = roomAct.ExpenseList.Any(ex => ex.IsSelected == true);
