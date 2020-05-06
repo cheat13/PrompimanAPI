@@ -16,5 +16,6 @@ namespace PrompimanAPI.Dac
         Task Creates(IEnumerable<ReplaceOneModel<RoomActivated>> writeModels);
         Task Update(Expression<Func<RoomActivated, bool>> expression, UpdateDefinition<RoomActivated> def);
         Task Updates(FilterDefinition<RoomActivated> filter, UpdateDefinition<RoomActivated> def);
+        Task<bool> Any(Expression<Func<RoomActivated, bool>> expression);
     }
 }

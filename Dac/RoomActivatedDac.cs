@@ -34,5 +34,8 @@ namespace PrompimanAPI.Dac
 
         public async Task Update(Expression<Func<RoomActivated, bool>> expression, UpdateDefinition<RoomActivated> def)
             => await Collection.UpdateManyAsync(expression, def);
+
+        public async Task<bool> Any(Expression<Func<RoomActivated, bool>> expression)
+            => await Collection.Find(expression).AnyAsync();
     }
 }

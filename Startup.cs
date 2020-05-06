@@ -47,6 +47,9 @@ namespace PrompimanAPI
             services.AddTransient<IRoomActivatedDac, RoomActivatedDac>();
             services.AddTransient<IRoomDac, RoomDac>();
             services.AddTransient<IMasterDac, MasterDac>();
+            services.AddTransient<IMemberService, MemberService>();
+            services.AddTransient<IReservationService, ReservationService>();
+            services.AddTransient<IMasterService, MasterService>();
             services.AddTransient<IRoomActService, RoomActService>();
         }
 

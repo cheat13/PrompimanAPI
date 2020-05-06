@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MongoDB.Driver;
 using PrompimanAPI.Dac;
 using PrompimanAPI.Models;
 
@@ -10,12 +11,41 @@ namespace PrompimanAPI.Services
     public class RoomActService : IRoomActService
     {
         private readonly IRoomDac roomDac;
-        public RoomActService(IRoomDac roomDac)
+        private readonly IRoomActivatedDac roomActivatedDac;
+        public RoomActService(
+            IRoomDac roomDac,
+            IRoomActivatedDac roomActivatedDac)
         {
             this.roomDac = roomDac;
+            this.roomActivatedDac = roomActivatedDac;
         }
 
-        public async Task<IEnumerable<RoomActivated>> CreateRoomActLst(CreateRoomActRequest req, string status, DateTime time)
+        public async Task Upsert(CreateRoomActRequest req, DateTime time)
+        {
+            var roomActLst = await Create(req, "จอง", time);
+
+            var writeModels = roomActLst
+               .OrderBy(it => it.RoomNo)
+               .Select(it =>
+               new ReplaceOneModel<RoomActivated>(Builders<RoomActivated>.Filter.Eq(d => d._id, it._id), it)
+               {
+                   IsUpsert = true
+               });
+
+            await roomActivatedDac.Creates(writeModels);
+        }
+
+        public async Task Delete(FilterDefinition<RoomActivated> filter, DateTime time)
+        {
+            var def = Builders<RoomActivated>.Update
+                .Set(r => r.Status, "ยกเลิก")
+                .Set(r => r.Active, false)
+                .Set(r => r.LastUpdate, time);
+
+            await roomActivatedDac.Updates(filter, def);
+        }
+
+        public async Task<IEnumerable<RoomActivated>> Create(CreateRoomActRequest req, string status, DateTime time)
         {
             var roomNoLst = req.RoomSltLst.Select(r => r.RoomNo).ToList();
             var rooms = await roomDac.Gets(r => roomNoLst.Contains(r._id));
@@ -110,6 +140,48 @@ namespace PrompimanAPI.Services
             }
 
             return expenseList;
+        }
+
+        public IEnumerable<RoomActivated> SetSelected(IEnumerable<RoomActivated> roomActLst, string roomId = null)
+        {
+            var roomSetSelected = roomActLst.ToList();
+
+            roomSetSelected.ForEach(it =>
+            {
+                if (string.IsNullOrEmpty(roomId) || it._id == roomId)
+                {
+                    it.ExpenseList.ToList().ForEach(i => i.IsSelected = true);
+                }
+            });
+
+            return roomSetSelected;
+        }
+
+        public CalculateExpense CalculateExpense(IEnumerable<Expense> expenseList, DateTime time)
+        {
+            var qry = expenseList.ToList();
+
+            qry.ForEach(expense =>
+            {
+                if (expense.IsSelected == true)
+                {
+                    expense.IsPaid = true;
+                    expense.IsSelected = false;
+                }
+                expense.CreationDateTime = time;
+            });
+
+            var totalCost = qry.Sum(expense => expense.TotalCost);
+            var paid = qry.Where(expense => expense.IsPaid == true).Sum(expense => expense.TotalCost);
+            var remaining = qry.Where(expense => expense.IsPaid == false).Sum(expense => expense.TotalCost);
+
+            return new CalculateExpense
+            {
+                ExpenseList = qry,
+                TotalCost = totalCost,
+                Paid = paid,
+                Remaining = remaining,
+            };
         }
     }
 }

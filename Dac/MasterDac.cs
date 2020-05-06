@@ -26,8 +26,14 @@ namespace PrompimanAPI.Dac
         public async Task<Master> Get(Expression<Func<Master, bool>> expression)
             => await Collection.Find(expression).FirstOrDefaultAsync();
 
+        public async Task<IEnumerable<Master>> Gets(Expression<Func<Master, bool>> expression)
+            => await Collection.Find(expression).ToListAsync();
+
         public async Task<IEnumerable<Master>> Gets(FilterDefinition<Master> filter, int skip, int limit)
             => await Collection.Find(filter).SortBy(x => x.CreationDateTime).Skip(skip).Limit(limit).ToListAsync();
+
+        public async Task<IEnumerable<Master>> Gets(FilterDefinition<Master> filter)
+            => await Collection.Find(filter).SortBy(x => x.CreationDateTime).ToListAsync();
 
         public async Task<bool> Any(FilterDefinition<Master> filter)
             => await Collection.Find(filter).AnyAsync();
