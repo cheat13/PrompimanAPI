@@ -14,6 +14,8 @@ namespace PrompimanAPI.Dac
         Task<bool> Any(FilterDefinition<Master> filter);
         Task<long> Count(FilterDefinition<Master> filter);
         Task<Master> Get(Expression<Func<Master, bool>> expression);
+        Task<IEnumerable<Master>> Gets(Expression<Func<Master, bool>> expression);
+        Task<IEnumerable<Master>> Gets(FilterDefinition<Master> filter);
         Task<IEnumerable<Master>> Gets(FilterDefinition<Master> filter, int skip, int limit);
         Task Create(Master document);
         Task Update(Expression<Func<Master, bool>> expression, Master document);

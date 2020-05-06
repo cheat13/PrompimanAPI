@@ -1,11 +1,37 @@
+using System;
+using System.Threading.Tasks;
 using MongoDB.Driver;
+using PrompimanAPI.Dac;
 using PrompimanAPI.Models;
 
 namespace PrompimanAPI.Services
 {
     public class MemberService : IMemberService
     {
-        public FilterDefinition<Member> CreateFilter(string word)
+        private readonly IMemberDac memberDac;
+
+        public MemberService(IMemberDac memberDac)
+        {
+            this.memberDac = memberDac;
+        }
+
+        public async Task<DataPaging<Member>> GetDataPaging(int page, int size, string word)
+        {
+            var filter = CreateFilter(word);
+            var start = Math.Max(0, page - 1) * size;
+
+            var members = await memberDac.Gets(filter, start, size);
+            var count = await memberDac.Count(filter);
+
+            return new DataPaging<Member>
+            {
+                DataList = members,
+                Page = page,
+                Count = (int)count,
+            };
+        }
+
+        private FilterDefinition<Member> CreateFilter(string word)
         {
             var fb = Builders<Member>.Filter;
             FilterDefinition<Member> carryFilter = fb.Where(m => true);

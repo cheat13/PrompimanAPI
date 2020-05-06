@@ -138,22 +138,23 @@ namespace PrompimanAPI.Controllers
         [HttpGet("{page}/{size}")]
         public async Task<ActionResult<DataPaging<Master>>> Get(int page, int size, string word = "")
         {
-            var filter = masterService.CreateFilter(word);
+            return await masterService.GetDataPaging(page, size, word);
+        }
 
-            var count = await masterDac.Count(filter);
-            var start = Math.Max(0, page - 1) * size;
-            var masters = await masterDac.Gets(filter, start, size);
+        [HttpGet("{page}/{size}/{haveRemaining}")]
+        public async Task<DataPaging<Master>> GetAllCheckOut(int page, int size, bool haveRemaining, string word = "")
+        {
+            return await masterService.GetAllCheckOut(page, size, word, haveRemaining);
+        }
 
-            return new DataPaging<Master>
-            {
-                DataList = masters,
-                Page = page,
-                Count = (int)count,
-            };
+        [HttpGet("{page}/{size}")]
+        public async Task<DataPaging<Master>> GetHistory(int page, int size, string word = "")
+        {
+            return await masterService.GetDataPaging(page, size, word, false);
         }
 
         [HttpGet("{masterId}")]
-        public async Task<ActionResult<MasterDetail>> GetById(string masterId)
+        public async Task<MasterDetail> GetById(string masterId)
         {
             var master = await masterDac.Get(m => m._id == masterId);
             var roomActLst = await roomActivatedDac.Gets(r => r.GroupId == masterId);

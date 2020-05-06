@@ -31,19 +31,7 @@ namespace PrompimanAPI.Controllers
         [HttpGet("{page}/{size}")]
         public async Task<ActionResult<DataPaging<Member>>> Get(int page, int size, string word = "")
         {
-            var filter = memberService.CreateFilter(word);
-
-            var start = Math.Max(0, page - 1) * size;
-            var members = await memberDac.Gets(filter, start, size);
-            
-            var count = await memberDac.Count(filter);
-
-            return new DataPaging<Member>
-            {
-                DataList = members,
-                Page = page,
-                Count = (int)count,
-            };
+            return await memberService.GetDataPaging(page, size, word);
         }
 
         [HttpGet("{id}")]
