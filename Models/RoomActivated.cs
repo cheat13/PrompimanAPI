@@ -33,6 +33,7 @@ namespace PrompimanAPI.Models
         public IEnumerable<Detail> Details { get; set; }
         public int TotalCost { get; set; }
         public DateTime CreationDateTime { get; set; }
+        public DateTime LastUpdate { get; set; }
     }
 
     public class Detail

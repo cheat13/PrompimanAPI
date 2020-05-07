@@ -13,5 +13,6 @@ namespace PrompimanAPI.Services
         Task<IEnumerable<RoomActivated>> Create(CreateRoomActRequest req, string status, DateTime time);
         IEnumerable<RoomActivated> SetSelected(IEnumerable<RoomActivated> roomActLst, string roomId = null);
         CalculateExpense CalculateExpense(IEnumerable<Expense> expenseList, DateTime time);
+        IEnumerable<Expense> SetCreationDateTime(IEnumerable<Expense> expenseList, DateTime time);
     }
 }

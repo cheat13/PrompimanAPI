@@ -27,21 +27,20 @@ namespace PrompimanAPI.Controllers
         public async Task<IEnumerable<Room>> Get(DateRequest req)
         {
             var rooms = await roomDac.Gets(x => true);
-            var roomLst = rooms.ToList();
 
             var roomActLst = await roomActivatedDac.Gets(x => true);
             var qryRoomActLst = roomActLst.Where(r => !((r.ArrivalDate - req.CheckOutDate).TotalHours >= 18 || (req.CheckInDate - r.Departure).TotalHours >= 18));
 
             if (qryRoomActLst.Any())
             {
-                roomLst.ForEach(room =>
+                rooms.ToList().ForEach(room =>
                 {
                     var roomAct = qryRoomActLst.FirstOrDefault(r => r.RoomNo == room._id);
                     if (roomAct != null) room.Status = roomAct.Status;
                 });
             }
 
-            return roomLst;
+            return rooms;
         }
 
         // [HttpPost]

@@ -144,9 +144,7 @@ namespace PrompimanAPI.Services
 
         public IEnumerable<RoomActivated> SetSelected(IEnumerable<RoomActivated> roomActLst, string roomId = null)
         {
-            var roomSetSelected = roomActLst.ToList();
-
-            roomSetSelected.ForEach(it =>
+            roomActLst.ToList().ForEach(it =>
             {
                 if (string.IsNullOrEmpty(roomId) || it._id == roomId)
                 {
@@ -154,34 +152,38 @@ namespace PrompimanAPI.Services
                 }
             });
 
-            return roomSetSelected;
+            return roomActLst;
         }
 
         public CalculateExpense CalculateExpense(IEnumerable<Expense> expenseList, DateTime time)
         {
-            var qry = expenseList.ToList();
-
-            qry.ForEach(expense =>
+            expenseList.ToList().ForEach(expense =>
             {
-                if (expense.IsSelected == true)
+                if (expense.IsPaid == false && expense.IsSelected == true)
                 {
                     expense.IsPaid = true;
-                    expense.IsSelected = false;
+                    expense.LastUpdate = time;
                 }
-                expense.CreationDateTime = time;
             });
 
-            var totalCost = qry.Sum(expense => expense.TotalCost);
-            var paid = qry.Where(expense => expense.IsPaid == true).Sum(expense => expense.TotalCost);
-            var remaining = qry.Where(expense => expense.IsPaid == false).Sum(expense => expense.TotalCost);
+            var totalCost = expenseList.Sum(expense => expense.TotalCost);
+            var paid = expenseList.Where(expense => expense.IsPaid == true).Sum(expense => expense.TotalCost);
+            var remaining = expenseList.Where(expense => expense.IsPaid == false).Sum(expense => expense.TotalCost);
 
             return new CalculateExpense
             {
-                ExpenseList = qry,
+                ExpenseList = expenseList,
                 TotalCost = totalCost,
                 Paid = paid,
                 Remaining = remaining,
             };
+        }
+
+        public IEnumerable<Expense> SetCreationDateTime(IEnumerable<Expense> expenseList, DateTime time)
+        {
+            expenseList.ToList().ForEach(expense => expense.CreationDateTime = time);
+
+            return expenseList;
         }
     }
 }

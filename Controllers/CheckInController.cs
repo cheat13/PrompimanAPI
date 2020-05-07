@@ -75,7 +75,8 @@ namespace PrompimanAPI.Controllers
 
             var roomActLst = req.RoomActLst.Select(it =>
                 {
-                    var calc = roomActService.CalculateExpense(it.ExpenseList, now);
+                    var expenseListSetTime = roomActService.SetCreationDateTime(it.ExpenseList, now);
+                    var calc = roomActService.CalculateExpense(expenseListSetTime, now);
 
                     return new RoomActivated
                     {
@@ -193,7 +194,7 @@ namespace PrompimanAPI.Controllers
                 var calc = roomActService.CalculateExpense(roomAct.ExpenseList, now);
                 calcLst.Add(calc);
 
-                var anySelect = roomAct.ExpenseList.Any(ex => ex.IsSelected == true);
+                var anySelect = roomAct.ExpenseList.Any(ex => ex.IsPaid == false && ex.IsSelected == true);
                 if (anySelect)
                 {
                     var defRoom = Builders<RoomActivated>.Update
