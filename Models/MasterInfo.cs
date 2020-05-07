@@ -7,6 +7,7 @@ namespace PrompimanAPI.Models
     {
         public string _id { get; set; }
         public string GroupName { get; set; }
+        public string Telephone { get; set; }
         public int BedNight { get; set; }
         public int DaysLeft { get; set; }
         public DateTime CheckInDate { get; set; }

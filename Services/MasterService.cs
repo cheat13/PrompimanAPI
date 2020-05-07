@@ -54,6 +54,7 @@ namespace PrompimanAPI.Services
                 {
                     _id = master._id,
                     GroupName = master.GroupName,
+                    Telephone = master.Telephone,
                     BedNight = bedNight,
                     DaysLeft = daysLeft,
                     CheckInDate = master.CheckInDate,
