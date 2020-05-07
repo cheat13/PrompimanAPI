@@ -39,6 +39,35 @@ namespace PrompimanAPI.Services
             };
         }
 
+        public async Task<DataPaging<MasterInfo>> GetAllCheckOut(int page, int size, string word, bool haveRemaining)
+        {
+            var qryMasters = new List<Master>();
+
+            var filter = CreateFilterRemaining(haveRemaining);
+            var allmaster = await masterDac.Gets(filter);
+
+            foreach (var master in allmaster)
+            {
+                var anyRoomActive = await roomActivatedDac.Any(r => r.GroupId == master._id && r.Active == true);
+                if (anyRoomActive == false) qryMasters.Add(master);
+            }
+
+            var mastersSearched = Searching(qryMasters, word);
+
+            var count = mastersSearched.Count();
+
+            var start = Math.Max(0, page - 1) * size;
+            var masters = mastersSearched.Skip(start).Take(size);
+            var masterInfoLst = await GetMasterInfoLst(masters);
+
+            return new DataPaging<MasterInfo>
+            {
+                DataList = masterInfoLst,
+                Page = page,
+                Count = count
+            };
+        }
+
         private async Task<IEnumerable<MasterInfo>> GetMasterInfoLst(IEnumerable<Master> masters)
         {
             var now = DateTime.Now;
@@ -90,32 +119,6 @@ namespace PrompimanAPI.Services
             }
 
             return carryFilter;
-        }
-
-        public async Task<DataPaging<MasterInfo>> GetAllCheckOut(int page, int size, string word, bool haveRemaining)
-        {
-            var qryMasters = new List<Master>();
-
-            var filter = CreateFilterRemaining(haveRemaining);
-            var allmaster = await masterDac.Gets(filter);
-
-            foreach (var master in allmaster)
-            {
-                var anyRoomActive = await roomActivatedDac.Any(r => r.GroupId == master._id && r.Active == true);
-                if (anyRoomActive == false) qryMasters.Add(master);
-            }
-
-            var masters = Searching(qryMasters, word);
-            var masterInfoLst = await GetMasterInfoLst(masters);
-
-            var count = qryMasters.Count();
-
-            return new DataPaging<MasterInfo>
-            {
-                DataList = masterInfoLst,
-                Page = page,
-                Count = count
-            };
         }
 
         private FilterDefinition<Master> CreateFilterRemaining(bool haveRemaining)
