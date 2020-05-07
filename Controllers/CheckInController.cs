@@ -109,6 +109,9 @@ namespace PrompimanAPI.Controllers
 
             if (oldMaster != null)
             {
+                if (master.CheckInDate < oldMaster.CheckInDate) oldMaster.CheckInDate = master.CheckInDate;
+                if (master.CheckOutDate > oldMaster.CheckOutDate) oldMaster.CheckOutDate = master.CheckOutDate;
+
                 oldMaster.Rooms = oldMaster.Rooms.Concat(master.Rooms).OrderBy(it => it.RoomNo);
                 oldMaster.HaveRoomDeposit = oldMaster.HaveRoomDeposit || master.HaveRoomDeposit;
                 oldMaster.HaveTaxInvoice = oldMaster.HaveTaxInvoice || master.HaveTaxInvoice;
@@ -166,8 +169,8 @@ namespace PrompimanAPI.Controllers
             };
         }
 
-        [HttpGet("{masterId}/{roomId}")]
-        public async Task<IEnumerable<RoomActivated>> GetRoomActLst(string masterId, string roomId)
+        [HttpGet("{masterId}")]
+        public async Task<IEnumerable<RoomActivated>> GetRoomActLst(string masterId, string roomId = null)
         {
             var roomActLst = await roomActivatedDac.Gets(x => x.GroupId == masterId);
 
