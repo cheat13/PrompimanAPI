@@ -49,6 +49,7 @@ namespace PrompimanAPI.Services
             {
                 var bedNight = await GetBedNight(master._id);
                 var daysLeft = (master.CheckOutDate - now).Days;
+                if (daysLeft < 0) daysLeft = 0;
 
                 var masterInfo = new MasterInfo
                 {
