@@ -21,20 +21,55 @@ namespace PrompimanAPI.Services
             this.roomActivatedDac = roomActivatedDac;
         }
 
-        public async Task<DataPaging<Master>> GetDataPaging(int page, int size, string word, bool active = true)
+        public async Task<DataPaging<MasterInfo>> GetDataPaging(int page, int size, string word, bool active = true)
         {
             var filter = CreateFilter(word, active);
             var start = Math.Max(0, page - 1) * size;
 
             var masters = await masterDac.Gets(filter, start, size);
+            var masterInfoLst = await GetMasterInfoLst(masters);
+
             var count = await masterDac.Count(filter);
 
-            return new DataPaging<Master>
+            return new DataPaging<MasterInfo>
             {
-                DataList = masters,
+                DataList = masterInfoLst,
                 Page = page,
                 Count = (int)count,
             };
+        }
+
+        private async Task<IEnumerable<MasterInfo>> GetMasterInfoLst(IEnumerable<Master> masters)
+        {
+            var now = DateTime.Now;
+
+            var masterInfoLst = new List<MasterInfo>();
+
+            foreach (var master in masters)
+            {
+                var bedNight = await GetBedNight(master._id);
+                var daysLeft = (master.CheckOutDate - now).Days;
+
+                var masterInfo = new MasterInfo
+                {
+                    _id = master._id,
+                    GroupName = master.GroupName,
+                    BedNight = bedNight,
+                    DaysLeft = daysLeft,
+                    CheckInDate = master.CheckInDate,
+                    CheckOutDate = master.CheckOutDate,
+                };
+
+                masterInfoLst.Add(masterInfo);
+            }
+
+            return masterInfoLst;
+        }
+
+        private async Task<int> GetBedNight(string masterId)
+        {
+            var rooms = await roomActivatedDac.Gets(r => r.GroupId == masterId);
+            return rooms.Sum(r => (r.Departure - r.ArrivalDate).Days);
         }
 
         private FilterDefinition<Master> CreateFilter(string word, bool active)
@@ -55,25 +90,27 @@ namespace PrompimanAPI.Services
             return carryFilter;
         }
 
-        public async Task<DataPaging<Master>> GetAllCheckOut(int page, int size, string word, bool haveRemaining)
+        public async Task<DataPaging<MasterInfo>> GetAllCheckOut(int page, int size, string word, bool haveRemaining)
         {
-            var masters = new List<Master>();
-            
+            var qryMasters = new List<Master>();
+
             var filter = CreateFilterRemaining(haveRemaining);
             var allmaster = await masterDac.Gets(filter);
 
             foreach (var master in allmaster)
             {
                 var anyRoomActive = await roomActivatedDac.Any(r => r.GroupId == master._id && r.Active == true);
-                if (anyRoomActive == false) masters.Add(master);
+                if (anyRoomActive == false) qryMasters.Add(master);
             }
 
-            var dataLst = Searching(masters, word);
-            var count = masters.Count();
+            var masters = Searching(qryMasters, word);
+            var masterInfoLst = await GetMasterInfoLst(masters);
 
-            return new DataPaging<Master>
+            var count = qryMasters.Count();
+
+            return new DataPaging<MasterInfo>
             {
-                DataList = dataLst,
+                DataList = masterInfoLst,
                 Page = page,
                 Count = count
             };

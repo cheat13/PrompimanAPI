@@ -145,19 +145,19 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpGet("{page}/{size}")]
-        public async Task<ActionResult<DataPaging<Master>>> Get(int page, int size, string word = "")
+        public async Task<ActionResult<DataPaging<MasterInfo>>> Get(int page, int size, string word = "")
         {
             return await masterService.GetDataPaging(page, size, word);
         }
 
         [HttpGet("{page}/{size}/{haveRemaining}")]
-        public async Task<DataPaging<Master>> GetAllCheckOut(int page, int size, bool haveRemaining, string word = "")
+        public async Task<DataPaging<MasterInfo>> GetAllCheckOut(int page, int size, bool haveRemaining, string word = "")
         {
             return await masterService.GetAllCheckOut(page, size, word, haveRemaining);
         }
 
         [HttpGet("{page}/{size}")]
-        public async Task<DataPaging<Master>> GetHistory(int page, int size, string word = "")
+        public async Task<DataPaging<MasterInfo>> GetHistory(int page, int size, string word = "")
         {
             return await masterService.GetDataPaging(page, size, word, false);
         }

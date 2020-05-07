@@ -7,7 +7,7 @@ namespace PrompimanAPI.Services
 {
     public interface IMasterService
     {
-        Task<DataPaging<Master>> GetDataPaging(int page, int size, string word, bool active = true);
-        Task<DataPaging<Master>> GetAllCheckOut(int page, int size, string word, bool haveRemaining);
+        Task<DataPaging<MasterInfo>> GetDataPaging(int page, int size, string word, bool active = true);
+        Task<DataPaging<MasterInfo>> GetAllCheckOut(int page, int size, string word, bool haveRemaining);
     }
 }
