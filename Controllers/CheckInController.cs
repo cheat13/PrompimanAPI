@@ -37,9 +37,15 @@ namespace PrompimanAPI.Controllers
         }
 
         [HttpGet("{memberId}/{groupName}")]
-        public async Task<bool> IsAlready(string memberId, string groupName)
+        public async Task<GroupNameChecked> IsAlready(string memberId, string groupName)
         {
-            return await masterDac.Any(x => x.MemberId == memberId && x.GroupName == groupName && x.Active == true);
+            var master = await masterDac.Get(x => x.GroupName == groupName && x.Active == true);
+
+            return (master == null)
+                ? GroupNameChecked.NotHave
+                : (master._id == memberId)
+                    ? GroupNameChecked.OldMaster
+                    : GroupNameChecked.NewMaster;
         }
 
         [HttpPut]
